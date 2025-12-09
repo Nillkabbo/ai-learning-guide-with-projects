@@ -1,0 +1,110 @@
+# Chapter 9: Fundamental Prompt Engineering - Cursor Rules
+
+## Chapter Context
+
+This chapter teaches fundamental prompt engineering - the art of crafting effective prompts. Students learn zero-shot, few-shot, chain-of-thought, role-based prompting, and A/B testing. Foundation for all advanced prompting.
+
+## Key Concepts
+
+### 1. Five Elements of Effective Prompts
+- **Task**: Clear action verb (Summarize, Translate, Classify)
+- **Context**: Background information needed
+- **Format**: Desired output structure (JSON, list, paragraph)
+- **Examples**: Few-shot demonstrations
+- **Role**: Expert persona to adopt
+
+### 2. Zero-Shot Prompting
+- No examples provided
+- Relies on training knowledge
+- Works for common tasks
+- Simplest approach
+
+### 3. Few-Shot Prompting
+- Provide 2-7 examples
+- Demonstrates desired pattern
+- More reliable than zero-shot
+- Cost: more tokens
+
+### 4. Chain-of-Thought Prompting
+- Show reasoning steps
+- "Let's think step by step"
+- Improves complex reasoning
+- More tokens but better accuracy
+
+### 5. Role-Based Prompting
+- Assign expert persona
+- Domain-specific knowledge
+- Consistent behavior
+- Professional tone
+
+### 6. A/B Testing
+- Test prompt variations
+- Measure metrics (accuracy, cost, speed)
+- Statistical significance
+- Iterative improvement
+
+## Important Code Patterns
+
+### Zero-Shot
+```python
+prompt = "Classify this device status: {status}"
+response = ai.call(prompt)
+```
+
+### Few-Shot
+```python
+prompt = """
+Classify device statuses:
+
+Input: "TEMP-001: 85°C, Battery: 15%"
+Output: Critical
+
+Input: "HUM-002: 45%, Battery: 80%"
+Output: Healthy
+
+Input: "{status}"
+Output:
+"""
+```
+
+### Chain-of-Thought
+```python
+prompt = """
+Analyze this IoT issue step by step:
+
+Problem: {problem}
+
+Step 1: Identify symptoms
+Step 2: Consider possible causes
+Step 3: Evaluate likelihood
+Step 4: Recommend solution
+"""
+```
+
+### Role-Based
+```python
+system = "You are an expert IoT engineer with 15 years of experience..."
+prompt = f"{system}\n\nAnalyze: {issue}"
+```
+
+## Common Mistakes to Avoid
+
+1. **Vague prompts**: Always be specific
+2. **Missing context**: Provide necessary background
+3. **No format specification**: AI needs structure guidance
+4. **Too many examples**: Diminishing returns after 5-7
+5. **Wrong temperature**: Use 0.0-0.3 for structured, 0.7 for creative
+6. **Not testing**: Always A/B test important prompts
+
+## Integration Points
+
+- **Chapters 5-8**: Apply to all APIs
+- **Chapter 10**: Advanced strategies build on this
+- **Chapter 11**: Structured output uses these patterns
+- **Chapter 12**: Domain-specific extends role-based
+
+## Related Chapters
+
+- **Chapter 10**: Advanced prompting (extends concepts)
+- **Chapter 11**: Structured output (applies patterns)
+- **Chapter 12**: Domain-specific (specializes patterns)

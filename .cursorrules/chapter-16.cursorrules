@@ -1,0 +1,104 @@
+# Chapter 16: Multi-Agent Systems - Cursor Rules
+
+## Chapter Context
+
+This chapter covers multi-agent systems - coordinating multiple specialized agents. Students learn coordination patterns, communication protocols, consensus mechanisms, and system architectures. Advanced topic building on single agents.
+
+## Key Concepts
+
+### 1. Multi-Agent Benefits
+- Specialization: each agent expert in one area
+- Parallel processing: multiple agents work simultaneously
+- Scalability: add agents as needed
+- Robustness: agent failure doesn't stop system
+
+### 2. Coordination Patterns
+- **Centralized**: Coordinator manages all agents
+- **Hierarchical**: Tree structure with managers
+- **Peer-to-peer**: Agents communicate directly
+- **Market-based**: Agents bid on tasks
+
+### 3. Communication
+- Message passing
+- Shared state (database, cache)
+- Event-driven architecture
+- Communication protocols
+
+### 4. Consensus Mechanisms
+- Voting: majority rules
+- Weighted voting: expert agents have more weight
+- Consensus algorithms
+- Conflict resolution
+
+### 5. System Architectures
+- Coordinator pattern
+- Blackboard pattern
+- Contract net protocol
+- Swarm intelligence
+
+## Important Code Patterns
+
+### Coordinator Pattern
+```python
+class Coordinator:
+    def __init__(self):
+        self.agents = {}
+    
+    def register_agent(self, agent_id, agent):
+        self.agents[agent_id] = agent
+    
+    def delegate_task(self, task):
+        # Choose appropriate agent
+        agent = self._select_agent(task)
+        # Delegate
+        return agent.process(task)
+    
+    def synthesize_results(self, results):
+        # Combine results from multiple agents
+        return self._combine(results)
+```
+
+### Voting Consensus
+```python
+class VotingAgent:
+    def cast_vote(self, proposal):
+        # Agent votes based on expertise
+        vote = self.reason(proposal)
+        return vote
+    
+    def reach_consensus(self, votes):
+        # Majority wins
+        return max(set(votes), key=votes.count)
+```
+
+### Communication
+```python
+class Agent:
+    def send_message(self, recipient, message):
+        # Send message to another agent
+        recipient.receive_message(self.id, message)
+    
+    def receive_message(self, sender, message):
+        # Process received message
+        self.process_message(sender, message)
+```
+
+## Common Mistakes to Avoid
+
+1. **Too many agents**: Start with 2-3, add as needed
+2. **Poor coordination**: Clear roles and protocols
+3. **No communication**: Agents must coordinate
+4. **Infinite loops**: Prevent circular dependencies
+5. **No consensus**: Define decision-making process
+
+## Integration Points
+
+- **Chapters 13-15**: Single agent foundation
+- **Chapter 20**: Scaling multi-agent systems
+- **Chapter 23**: Monitoring multi-agent systems
+
+## Related Chapters
+
+- **Chapters 13-15**: Single agents (foundation)
+- **Chapter 20**: Scaling (extends to many agents)
+- **Chapter 23**: Monitoring (observes multi-agent)

@@ -1,0 +1,131 @@
+# Chapter 11: Mastering Structured Output - Cursor Rules
+
+## Chapter Context
+
+This chapter teaches how to force AI output into reliable, machine-readable structures. Students learn JSON generation, Pydantic validation, constrained code generation, and template-based approaches. Essential for production systems.
+
+## Key Concepts
+
+### 1. Structured Output Problem
+- AI generates free-form text
+- Hard to parse programmatically
+- Inconsistent formats
+- Breaks automation
+- Need for reliable structure
+
+### 2. Prompting for Structure
+- Explicit format instructions
+- JSON schema in prompt
+- Examples of desired format
+- Clear structure requirements
+- Works with all providers
+
+### 3. JSON Mode (OpenAI)
+- `response_format={"type": "json_object"}`
+- Guarantees valid JSON
+- Requires JSON instruction in prompt
+- OpenAI-specific feature
+- Most reliable for JSON
+
+### 4. Pydantic Validation
+- Define data models
+- Automatic validation
+- Type safety
+- Error handling
+- Schema generation
+
+### 5. Constrained Code Generation
+- Generate code with constraints
+- Follow patterns
+- Adhere to standards
+- Validate generated code
+- Test before use
+
+### 6. Template-Based Generation
+- Use templates
+- Fill in variables
+- Consistent structure
+- Reusable patterns
+- Maintainability
+
+## Important Code Patterns
+
+### Structured Prompting
+```python
+prompt = f"""
+Analyze this data and respond with JSON:
+{{
+  "status": "Healthy|Warning|Critical",
+  "issues": ["issue1", "issue2"],
+  "action": "recommended action"
+}}
+
+Data: {data}
+"""
+```
+
+### JSON Mode (OpenAI)
+```python
+response = client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[{"role": "user", "content": prompt}],
+    response_format={"type": "json_object"}  # Guarantees JSON
+)
+```
+
+### Pydantic Validation
+```python
+from pydantic import BaseModel, Field
+
+class DeviceConfig(BaseModel):
+    device_id: str
+    temperature_limit: float = Field(gt=0, le=100)
+    battery_threshold: float = Field(ge=0, le=100)
+
+# Validate AI output
+try:
+    config = DeviceConfig.parse_raw(ai_output)
+except ValidationError as e:
+    # Handle validation error
+    pass
+```
+
+### Robust JSON Extraction (Ollama)
+```python
+import json
+import re
+
+def extract_json(response: str) -> dict:
+    # Try direct parse
+    try:
+        return json.loads(response)
+    except:
+        # Extract JSON from text
+        json_match = re.search(r'\{[^}]+\}', response)
+        if json_match:
+            return json.loads(json_match.group())
+        raise ValueError("No valid JSON found")
+```
+
+## Common Mistakes to Avoid
+
+1. **No format specification**: Always specify desired format
+2. **Trusting AI output**: Always validate
+3. **No error handling**: Malformed output will break code
+4. **Ignoring Pydantic**: Provides type safety and validation
+5. **Not testing**: Test with various inputs
+6. **Ollama without extraction**: Need robust JSON parsing
+
+## Integration Points
+
+- **Chapters 9-10**: Applies prompting strategies
+- **Chapter 12**: Domain-specific uses structured output
+- **Chapter 13**: Agents need structured data
+- **Chapter 17**: Web apps use structured APIs
+
+## Related Chapters
+
+- **Chapter 9**: Fundamental prompting (applies patterns)
+- **Chapter 10**: Advanced strategies (with structure)
+- **Chapter 12**: Domain-specific (structured domain data)
+- **Chapter 17**: Web applications (structured APIs)

@@ -1,0 +1,108 @@
+# Chapter 18: Real-Time AI Applications - Cursor Rules
+
+## Chapter Context
+
+This chapter covers building real-time AI applications with minimal latency. Students learn WebSockets, background workers, caching, rate limiting, and priority queuing. Essential for time-sensitive applications.
+
+## Key Concepts
+
+### 1. Real-Time Challenges
+- Blocking operations kill performance
+- Sequential processing is slow
+- No resilience to failures
+- Inefficient resource usage
+- Need for async architecture
+
+### 2. WebSockets
+- Persistent, bidirectional connections
+- Real-time server-to-client updates
+- Connection management
+- Reconnection handling
+- Event-driven communication
+
+### 3. Background Workers
+- Celery for async task processing
+- Redis/RabbitMQ as message broker
+- Long-running operations
+- Task monitoring
+- Result delivery
+
+### 4. Caching Strategies
+- Multi-level caching (memory, Redis, database)
+- Semantic caching (similar prompts)
+- Cache invalidation
+- Cache warming
+- Performance optimization
+
+### 5. Rate Limiting and Queuing
+- Token bucket algorithm
+- Priority queues
+- Load management
+- Fair distribution
+- Prevent system overload
+
+## Important Code Patterns
+
+### WebSocket Server
+```python
+from fastapi import FastAPI, WebSocket
+
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: list[WebSocket] = []
+    
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+    
+    async def broadcast(self, message: str):
+        for connection in self.active_connections:
+            await connection.send_text(message)
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            data = await websocket.receive_text()
+            # Process and broadcast
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+```
+
+### Background Workers (Celery)
+```python
+from celery import Celery
+
+celery_app = Celery('tasks', broker='redis://localhost:6379')
+
+@celery_app.task
+def analyze_data_async(data):
+    # Long-running AI analysis
+    result = ai.analyze(data)
+    return result
+
+# In web endpoint
+task = analyze_data_async.delay(data)
+return {"task_id": task.id}
+```
+
+## Common Mistakes to Avoid
+
+1. **Blocking operations**: Always use async/background workers
+2. **No caching**: Wastes money and time
+3. **No rate limiting**: Will hit provider limits
+4. **Poor WebSocket handling**: Manage connections properly
+5. **No monitoring**: Can't debug real-time issues
+
+## Integration Points
+
+- **Chapter 17**: Web apps (extends with real-time)
+- **Chapter 19**: Architecture (real-time patterns)
+- **Chapter 20**: Scaling (extends to many users)
+
+## Related Chapters
+
+- **Chapter 17**: Web applications (foundation)
+- **Chapter 19**: Architecture (patterns)
+- **Chapter 20**: Scaling (extends concepts)

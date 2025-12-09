@@ -1,0 +1,112 @@
+# Chapter 30: Building Your AI Product - Cursor Rules
+
+## Chapter Context
+
+This final chapter covers moving from AI systems to AI products. Students learn problem-first thinking, Lean AI Canvas, MVP development, data flywheels, ethics, and launching successful AI products. Synthesizes all learning into product thinking.
+
+## Key Concepts
+
+### 1. Problem-First Mindset
+- **Technology-first is wrong**: "What can AI do?" → demos, not products
+- **Problem-first is right**: "What problem can AI solve?" → products
+- AI is the engine, not the car
+- Users want solutions, not technology
+- Value delivery over technical capability
+
+### 2. Lean AI Canvas
+- One-page product blueprint
+- Forces critical questions:
+  - Problem, customers, value proposition
+  - Solution, AI core, data moat
+  - Metrics, channels, costs, revenue
+  - Unfair advantage
+- Validates ideas before building
+- Exposes weaknesses early
+
+### 3. MVP Development
+- Minimum Viable Product (smallest version that solves core problem)
+- **Wizard of Oz MVP**: Human does "AI" work to test demand
+- Fast validation (test before building)
+- Generate training data (expert analyses become dataset)
+- Cheap and quick
+
+### 4. Data Flywheel
+- Competitive advantage through data
+- More users → more data → better product → more users
+- Defensible moat (hard to replicate)
+- Design from day one (capture interaction data)
+- Privacy-protected (with consent)
+
+### 5. Ethics and Responsibility
+- Ethical review checklist
+- Bias and fairness
+- Privacy and consent
+- Transparency
+- Responsible AI practices
+- Real-world impact
+
+## Important Code Patterns
+
+### Lean AI Canvas Structure
+```
+1. Problem (top 1-3 problems)
+2. Customer Segments (target + early adopters)
+3. Unique Value Proposition
+4. Solution (top 3 features)
+5. AI Core (specific AI skill)
+6. Data Moat (how product improves)
+7. Key Metrics (success measures)
+8. Channels (paths to customers)
+9. Cost Structure (fixed + variable)
+10. Revenue Streams
+11. Unfair Advantage
+```
+
+### Data Flywheel Design
+```python
+# Conceptual flywheel
+def data_flywheel_cycle():
+    # More users
+    users = get_active_users()
+    
+    # More interaction data
+    interactions = capture_interactions(users)
+    
+    # Better insights/model
+    improved_model = train_on_new_data(interactions)
+    
+    # Improved product
+    deploy_improved_model(improved_model)
+    
+    # Attracts more users (cycle repeats)
+    return improved_model
+```
+
+## Common Mistakes to Avoid
+
+1. **Technology-first thinking**: Build for problems, not tech
+2. **No planning**: Canvas saves months of wrong building
+3. **Over-building MVP**: Start simple, validate first
+4. **No data strategy**: Miss competitive advantage
+5. **Ignoring ethics**: Real consequences, legal issues
+
+## Integration Points
+
+- **All previous chapters**: Technical foundation for products
+- **Chapter 19**: Architecture (product architecture)
+- **Chapter 25**: Deployment (product deployment)
+
+## Related Chapters
+
+- **All previous**: Technical foundation
+- **Chapter 19**: Architecture (product architecture)
+- **Chapter 25**: Deployment (product deployment)
+
+## Course Completion
+
+This chapter synthesizes all learning into product thinking. Students should now be able to:
+- Build AI systems (Chapters 1-28)
+- Understand future trends (Chapter 29)
+- Build AI products (Chapter 30)
+
+Complete AI engineer ready for production work!
