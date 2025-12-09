@@ -1,8 +1,21 @@
 # Ultimate AI Engineering Learning Guide
 
+## Attribution
+
+**This learning guide is based on the excellent work:**
+
+**"Introduction to AI Engineering (for software engineers)"**  
+**By: Obinna Okechukwu**
+
+This learning guide system extends the original book with structured learning paths, hands-on projects, and context management tools. For complete attribution details, see [ATTRIBUTION.md](ATTRIBUTION.md).
+
+---
+
 ## Overview
 
 This is a comprehensive, structured learning system designed to help you master AI Engineering from the ground up. Whether you're a complete beginner or looking to deepen your understanding, this guide provides a systematic, project-based approach to learning.
+
+**Note**: This guide is a companion resource to the original book. The source material comes from Obinna Okechukwu's "Introduction to AI Engineering" repository.
 
 ## What Makes This Guide Different
 
