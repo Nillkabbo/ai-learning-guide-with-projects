@@ -4,6 +4,13 @@
 
 This chapter covers monitoring and observability for AI systems. You'll learn structured logging, AI-specific metrics, distributed tracing, monitoring dashboards, automated alerts, and building complete observability systems.
 
+
+## Navigation
+
+**← Previous**: [Chapter 22: Security and Safety](chapter-22-guide.md)
+
+**Next →**: [Chapter 24: Testing AI Systems](chapter-24-guide.md)
+
 ## Educator Perspective
 
 ### Teaching Strategy
@@ -218,3 +225,11 @@ A: Define thresholds, configure notifications, test alerts.
 ## Next Chapter Preview
 
 Chapter 24 covers testing AI systems - testing non-deterministic systems effectively.
+---
+
+## Navigation
+
+**← Previous**: [Chapter 22: Security and Safety](chapter-22-guide.md)
+
+**Next →**: [Chapter 24: Testing AI Systems](chapter-24-guide.md)
+

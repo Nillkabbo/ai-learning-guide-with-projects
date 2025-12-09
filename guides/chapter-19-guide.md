@@ -4,6 +4,13 @@
 
 This chapter covers architectural patterns for AI applications: monoliths vs. microservices, event-driven systems, database choices, configuration management, and building complete production architectures.
 
+
+## Navigation
+
+**← Previous**: [Chapter 18: Real-Time AI Applications](chapter-18-guide.md)
+
+**Next →**: [Chapter 20: Scaling AI Applications](chapter-20-guide.md)
+
 ## Educator Perspective
 
 ### Teaching Strategy
@@ -215,3 +222,11 @@ A: Centralized, versioned, environment-specific.
 ## Next Chapter Preview
 
 Chapter 20 covers scaling AI applications - handling growth and load.
+---
+
+## Navigation
+
+**← Previous**: [Chapter 18: Real-Time AI Applications](chapter-18-guide.md)
+
+**Next →**: [Chapter 20: Scaling AI Applications](chapter-20-guide.md)
+

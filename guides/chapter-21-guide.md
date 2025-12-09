@@ -4,6 +4,13 @@
 
 This chapter teaches strategies to reduce AI API costs by 50-90% while maintaining quality. You'll learn intelligent caching, batch processing, model selection, cost monitoring, and ROI calculation.
 
+
+## Navigation
+
+**← Previous**: [Chapter 20: Scaling AI Applications](chapter-20-guide.md)
+
+**Next →**: [Chapter 22: Security and Safety](chapter-22-guide.md)
+
 ## Educator Perspective
 
 ### Teaching Strategy
@@ -213,3 +220,11 @@ A: Use cheapest model that meets quality requirements.
 ## Next Chapter Preview
 
 Chapter 22 covers security and safety - protecting AI applications from attacks and ensuring safe operation.
+---
+
+## Navigation
+
+**← Previous**: [Chapter 20: Scaling AI Applications](chapter-20-guide.md)
+
+**Next →**: [Chapter 22: Security and Safety](chapter-22-guide.md)
+

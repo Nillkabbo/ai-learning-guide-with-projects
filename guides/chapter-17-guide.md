@@ -4,6 +4,13 @@
 
 This chapter teaches how to build web applications that serve AI capabilities. You'll learn Flask and FastAPI, handle file uploads, implement streaming responses, use Server-Sent Events (SSE), validate with Pydantic, and build a complete IoT device management web interface.
 
+
+## Navigation
+
+**← Previous**: [Chapter 16: Multi-Agent Systems](chapter-16-guide.md)
+
+**Next →**: [Chapter 18: Real-Time AI Applications](chapter-18-guide.md)
+
 ## Educator Perspective
 
 ### Teaching Strategy
@@ -213,3 +220,11 @@ A: For production, yes. Provides validation and docs.
 ## Next Chapter Preview
 
 Chapter 18 covers real-time AI applications with background tasks and async processing.
+---
+
+## Navigation
+
+**← Previous**: [Chapter 16: Multi-Agent Systems](chapter-16-guide.md)
+
+**Next →**: [Chapter 18: Real-Time AI Applications](chapter-18-guide.md)
+

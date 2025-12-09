@@ -4,6 +4,13 @@
 
 This critical chapter teaches you to understand what AI can and cannot do reliably. Developing realistic expectations and implementing safeguards is essential for building trustworthy AI applications. This knowledge prevents common mistakes and helps you build systems that are both powerful and safe.
 
+
+## Navigation
+
+**← Previous**: [Chapter 3: Development Environment](chapter-03-guide.md)
+
+**Next →**: [Chapter 5: OpenAI API Complete Guide](chapter-05-guide.md)
+
 ## Educator Perspective
 
 ### Teaching Strategy
@@ -183,4 +190,11 @@ A: No! AI is powerful for appropriate tasks. The key is knowing when to use it.
 ## Next Chapter Preview
 
 Chapter 5 will cover the complete OpenAI API guide, building on your understanding of capabilities and limitations.
+---
+
+## Navigation
+
+**← Previous**: [Chapter 3: Development Environment](chapter-03-guide.md)
+
+**Next →**: [Chapter 5: OpenAI API Complete Guide](chapter-05-guide.md)
 

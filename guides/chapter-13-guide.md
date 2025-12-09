@@ -4,6 +4,13 @@
 
 This chapter introduces AI agents - systems that can perceive, think, plan, and act autonomously. You'll learn the agent loop (perceive-think-act), build agent components (perception, memory, reasoning, action), and assemble a complete autonomous IoT monitoring agent.
 
+
+## Navigation
+
+**← Previous**: [Chapter 12: Domain-Specific Prompting](chapter-12-guide.md)
+
+**Next →**: [Chapter 14: Tool Use and Function Calling](chapter-14-guide.md)
+
 ## Educator Perspective
 
 ### Teaching Strategy
@@ -210,3 +217,11 @@ A: Test components individually, then test complete agent with goals.
 ## Next Chapter Preview
 
 Chapter 14 covers tool use and function calling - giving agents the ability to act in the world.
+---
+
+## Navigation
+
+**← Previous**: [Chapter 12: Domain-Specific Prompting](chapter-12-guide.md)
+
+**Next →**: [Chapter 14: Tool Use and Function Calling](chapter-14-guide.md)
+

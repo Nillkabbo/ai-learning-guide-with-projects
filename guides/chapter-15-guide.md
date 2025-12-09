@@ -4,6 +4,13 @@
 
 This chapter bridges the gap from prototype to production. You'll learn agent frameworks (LangChain), state management, communication protocols, logging/metrics/tracing, graceful failure handling, and building complete production-grade agents.
 
+
+## Navigation
+
+**← Previous**: [Chapter 14: Tool Use and Function Calling](chapter-14-guide.md)
+
+**Next →**: [Chapter 16: Multi-Agent Systems](chapter-16-guide.md)
+
 ## Educator Perspective
 
 ### Teaching Strategy
@@ -212,3 +219,11 @@ A: Test components, test failures, test recovery, load test.
 ## Next Chapter Preview
 
 Chapter 16 covers multi-agent systems - coordinating multiple agents for complex tasks.
+---
+
+## Navigation
+
+**← Previous**: [Chapter 14: Tool Use and Function Calling](chapter-14-guide.md)
+
+**Next →**: [Chapter 16: Multi-Agent Systems](chapter-16-guide.md)
+

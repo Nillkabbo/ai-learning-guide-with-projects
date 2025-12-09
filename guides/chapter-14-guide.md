@@ -4,6 +4,13 @@
 
 This chapter teaches tool use and function calling - giving agents the ability to interact with external systems. You'll learn the tool-use loop, implement function calling across providers, design tool schemas, build tool registries, and create secure execution environments.
 
+
+## Navigation
+
+**← Previous**: [Chapter 13: Introduction to AI Agents](chapter-13-guide.md)
+
+**Next →**: [Chapter 15: Building Production Agents](chapter-15-guide.md)
+
 ## Educator Perspective
 
 ### Teaching Strategy
@@ -233,3 +240,11 @@ A: Yes, but be careful of loops and complexity.
 ## Next Chapter Preview
 
 Chapter 15 covers building production-ready agents with frameworks, state management, and observability.
+---
+
+## Navigation
+
+**← Previous**: [Chapter 13: Introduction to AI Agents](chapter-13-guide.md)
+
+**Next →**: [Chapter 15: Building Production Agents](chapter-15-guide.md)
+

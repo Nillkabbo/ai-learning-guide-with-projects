@@ -4,6 +4,13 @@
 
 This chapter covers advanced prompting strategies for complex problems: self-consistency, tree-of-thought, ReAct, multi-agent debate, and reflexion. These are structured, multi-step reasoning frameworks for tackling complexity.
 
+
+## Navigation
+
+**← Previous**: [Chapter 9: Fundamental Prompt Engineering](chapter-09-guide.md)
+
+**Next →**: [Chapter 11: Structured Output Generation](chapter-11-guide.md)
+
 ## Educator Perspective
 
 ### Teaching Strategy
@@ -213,3 +220,11 @@ A: Start with 2-3, add more for complex decisions.
 ## Next Chapter Preview
 
 Chapter 11 covers structured output generation - forcing AI into reliable formats.
+---
+
+## Navigation
+
+**← Previous**: [Chapter 9: Fundamental Prompt Engineering](chapter-09-guide.md)
+
+**Next →**: [Chapter 11: Structured Output Generation](chapter-11-guide.md)
+

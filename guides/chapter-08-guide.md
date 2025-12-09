@@ -4,6 +4,13 @@
 
 This chapter covers production-grade patterns for building robust, scalable AI systems. You'll learn error handling, retries, rate limiting, caching, streaming, and multi-provider architectures. These patterns are essential for moving from prototypes to production.
 
+
+## Navigation
+
+**← Previous**: [Chapter 7: Google Gemini API Guide](chapter-07-guide.md)
+
+**Next →**: [Chapter 9: Fundamental Prompt Engineering](chapter-09-guide.md)
+
 ## Educator Perspective
 
 ### Teaching Strategy
@@ -235,3 +242,11 @@ A: Simulate failures, rate limits, and network issues.
 ## Next Chapter Preview
 
 Chapter 9 covers fundamental prompt engineering - the art of crafting effective prompts.
+---
+
+## Navigation
+
+**← Previous**: [Chapter 7: Google Gemini API Guide](chapter-07-guide.md)
+
+**Next →**: [Chapter 9: Fundamental Prompt Engineering](chapter-09-guide.md)
+

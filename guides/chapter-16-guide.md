@@ -4,6 +4,13 @@
 
 This chapter covers multi-agent systems - coordinating multiple specialized agents to solve complex problems. You'll learn coordination patterns, communication protocols, consensus mechanisms, and build complete multi-agent systems.
 
+
+## Navigation
+
+**← Previous**: [Chapter 15: Building Production Agents](chapter-15-guide.md)
+
+**Next →**: [Chapter 17: Building AI-Powered Web Applications](chapter-17-guide.md)
+
 ## Educator Perspective
 
 ### Teaching Strategy
@@ -185,3 +192,11 @@ A: For complex, specialized tasks, yes.
 ## Next Chapter Preview
 
 Chapter 17 covers building AI-powered web applications with Flask and FastAPI.
+---
+
+## Navigation
+
+**← Previous**: [Chapter 15: Building Production Agents](chapter-15-guide.md)
+
+**Next →**: [Chapter 17: Building AI-Powered Web Applications](chapter-17-guide.md)
+

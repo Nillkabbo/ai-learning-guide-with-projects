@@ -4,6 +4,13 @@
 
 This chapter introduces Google's Gemini API, which is "multimodal native" - designed to seamlessly handle text, images, audio, and video. You'll learn Gemini's API structure, system instructions, multimodal capabilities, function calling, and how to build sophisticated applications.
 
+
+## Navigation
+
+**← Previous**: [Chapter 6: Anthropic Claude API Mastery](chapter-06-guide.md)
+
+**Next →**: [Chapter 8: API Design Patterns](chapter-08-guide.md)
+
 ## Educator Perspective
 
 ### Teaching Strategy
@@ -192,3 +199,11 @@ A: Yes! Many production systems use multiple providers for different strengths.
 ## Next Chapter Preview
 
 Chapter 8 covers API design patterns and best practices for production systems.
+---
+
+## Navigation
+
+**← Previous**: [Chapter 6: Anthropic Claude API Mastery](chapter-06-guide.md)
+
+**Next →**: [Chapter 8: API Design Patterns](chapter-08-guide.md)
+

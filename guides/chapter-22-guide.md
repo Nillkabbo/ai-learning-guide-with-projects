@@ -4,6 +4,13 @@
 
 This chapter covers securing AI applications from attacks and ensuring safe operation. You'll learn API key management, prompt injection defenses, input sanitization, output filtering, audit logging, rate limiting, compliance, and building secure systems.
 
+
+## Navigation
+
+**← Previous**: [Chapter 21: Cost Optimization](chapter-21-guide.md)
+
+**Next →**: [Chapter 23: Monitoring and Observability](chapter-23-guide.md)
+
 ## Educator Perspective
 
 ### Teaching Strategy
@@ -224,3 +231,11 @@ A: Log all AI interactions, user actions, and security events.
 ## Next Chapter Preview
 
 Chapter 23 covers monitoring and observability - understanding AI system health and performance.
+---
+
+## Navigation
+
+**← Previous**: [Chapter 21: Cost Optimization](chapter-21-guide.md)
+
+**Next →**: [Chapter 23: Monitoring and Observability](chapter-23-guide.md)
+

@@ -4,6 +4,13 @@
 
 This chapter teaches how to force AI's creative output into rigid, reliable, machine-readable structures. You'll learn JSON generation, Pydantic validation, constrained code generation, and template-based approaches for production systems.
 
+
+## Navigation
+
+**← Previous**: [Chapter 10: Advanced Prompting Strategies](chapter-10-guide.md)
+
+**Next →**: [Chapter 12: Domain-Specific Prompting](chapter-12-guide.md)
+
 ## Educator Perspective
 
 ### Teaching Strategy
@@ -232,3 +239,11 @@ A: Retry with stronger instructions, use JSON mode if available.
 ## Next Chapter Preview
 
 Chapter 12 covers domain-specific prompting - tailoring prompts to specific industries and use cases.
+---
+
+## Navigation
+
+**← Previous**: [Chapter 10: Advanced Prompting Strategies](chapter-10-guide.md)
+
+**Next →**: [Chapter 12: Domain-Specific Prompting](chapter-12-guide.md)
+

@@ -4,6 +4,13 @@
 
 This chapter teaches domain-specific prompting - embedding deep, industry-specific knowledge into prompts. You'll learn to create expert personas, generate domain-specific documentation, perform domain code reviews, and build specialized AI systems.
 
+
+## Navigation
+
+**← Previous**: [Chapter 11: Structured Output Generation](chapter-11-guide.md)
+
+**Next →**: [Chapter 13: Introduction to AI Agents](chapter-13-guide.md)
+
 ## Educator Perspective
 
 ### Teaching Strategy
@@ -206,3 +213,11 @@ A: Yes, but specialized personas work better.
 ## Next Chapter Preview
 
 Chapter 13 introduces AI agents - moving from chatbots to autonomous systems.
+---
+
+## Navigation
+
+**← Previous**: [Chapter 11: Structured Output Generation](chapter-11-guide.md)
+
+**Next →**: [Chapter 13: Introduction to AI Agents](chapter-13-guide.md)
+

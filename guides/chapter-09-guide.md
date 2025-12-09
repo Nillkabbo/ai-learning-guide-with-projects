@@ -4,6 +4,13 @@
 
 This chapter teaches the art and science of prompt engineering - crafting inputs that guide AI to produce exact outputs. You'll learn the anatomy of great prompts, core patterns (zero-shot, few-shot, chain-of-thought), role-based prompting, and A/B testing.
 
+
+## Navigation
+
+**← Previous**: [Chapter 8: API Design Patterns](chapter-08-guide.md)
+
+**Next →**: [Chapter 10: Advanced Prompting Strategies](chapter-10-guide.md)
+
 ## Educator Perspective
 
 ### Teaching Strategy
@@ -231,3 +238,11 @@ A: When you need domain expertise or consistent tone.
 ## Next Chapter Preview
 
 Chapter 10 covers advanced prompting strategies: self-consistency, tree-of-thought, ReAct, multi-agent debate, and reflexion.
+---
+
+## Navigation
+
+**← Previous**: [Chapter 8: API Design Patterns](chapter-08-guide.md)
+
+**Next →**: [Chapter 10: Advanced Prompting Strategies](chapter-10-guide.md)
+

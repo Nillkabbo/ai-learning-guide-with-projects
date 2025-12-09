@@ -4,6 +4,13 @@
 
 This is your first step into AI engineering. This chapter introduces the fundamental concepts that everything else builds upon. Take your time here—mastering these basics will make all future chapters much easier.
 
+
+## Navigation
+
+**← Previous**: None (This is the first chapter)
+
+**Next →**: [Chapter 2: Core Concepts](chapter-02-guide.md)
+
 ## Educator Perspective
 
 ### Teaching Strategy
@@ -438,4 +445,11 @@ Chapter 2 will dive deeper into:
 - Context windows: The AI's memory limits
 
 These concepts will help you write better prompts and build more efficient applications.
+---
+
+## Navigation
+
+**← Previous**: None (This is the first chapter)
+
+**Next →**: [Chapter 2: Core Concepts](chapter-02-guide.md)
 

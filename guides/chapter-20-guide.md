@@ -4,6 +4,13 @@
 
 This chapter covers scaling AI applications to handle growth. You'll learn horizontal scaling, load balancing, queue-based architectures, microservices scaling, database optimization, and building globally-scalable systems.
 
+
+## Navigation
+
+**← Previous**: [Chapter 19: AI Application Architecture Patterns](chapter-19-guide.md)
+
+**Next →**: [Chapter 21: Cost Optimization](chapter-21-guide.md)
+
 ## Educator Perspective
 
 ### Teaching Strategy
@@ -212,3 +219,11 @@ A: Read replicas for reads, sharding for writes, caching for both.
 ## Next Chapter Preview
 
 Chapter 21 covers cost optimization - reducing AI API costs while maintaining quality.
+---
+
+## Navigation
+
+**← Previous**: [Chapter 19: AI Application Architecture Patterns](chapter-19-guide.md)
+
+**Next →**: [Chapter 21: Cost Optimization](chapter-21-guide.md)
+

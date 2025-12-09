@@ -4,6 +4,13 @@
 
 This chapter covers testing non-deterministic AI systems. You'll learn unit testing with mocks, integration testing, AI regression testing, load testing, and building complete testing suites for AI applications.
 
+
+## Navigation
+
+**← Previous**: [Chapter 23: Monitoring and Observability](chapter-23-guide.md)
+
+**Next →**: [Chapter 25: Deployment and DevOps](chapter-25-guide.md)
+
 ## Educator Perspective
 
 ### Teaching Strategy
@@ -218,3 +225,11 @@ A: Use AI to score response quality against criteria.
 ## Next Chapter Preview
 
 Chapter 25 covers deployment and DevOps - moving AI applications to production safely.
+---
+
+## Navigation
+
+**← Previous**: [Chapter 23: Monitoring and Observability](chapter-23-guide.md)
+
+**Next →**: [Chapter 25: Deployment and DevOps](chapter-25-guide.md)
+

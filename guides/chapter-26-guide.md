@@ -4,6 +4,13 @@
 
 This chapter covers fine-tuning custom AI models on your data. You'll learn when to fine-tune vs. prompt engineering vs. RAG, data preparation, fine-tuning workflow, model evaluation, and deploying custom models.
 
+
+## Navigation
+
+**← Previous**: [Chapter 25: Deployment and DevOps](chapter-25-guide.md)
+
+**Next →**: [Chapter 27: RAG (Retrieval Augmented Generation)](chapter-27-guide.md)
+
 ## Educator Perspective
 
 ### Teaching Strategy
@@ -217,3 +224,11 @@ A: No, use RAG for factual knowledge. Fine-tuning is for skills.
 ## Next Chapter Preview
 
 Chapter 27 covers RAG (Retrieval-Augmented Generation) - teaching AI new knowledge through retrieval.
+---
+
+## Navigation
+
+**← Previous**: [Chapter 25: Deployment and DevOps](chapter-25-guide.md)
+
+**Next →**: [Chapter 27: RAG (Retrieval Augmented Generation)](chapter-27-guide.md)
+

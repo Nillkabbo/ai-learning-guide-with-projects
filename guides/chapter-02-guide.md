@@ -4,6 +4,13 @@
 
 This chapter dives into the "engine room" of AI—the fundamental mechanics that govern how LLMs work. Understanding tokens, embeddings, and context windows is essential for building cost-effective and efficient AI applications. These concepts might seem abstract, but they directly impact every application you'll build.
 
+
+## Navigation
+
+**← Previous**: [Chapter 1: Welcome to AI Engineering](chapter-01-guide.md)
+
+**Next →**: [Chapter 3: Development Environment](chapter-03-guide.md)
+
 ## Educator Perspective
 
 ### Teaching Strategy
@@ -286,4 +293,11 @@ Chapter 3 will cover:
 - Project structure and organization
 - Building a command-line chatbot
 - This builds on context management from Chapter 2
+---
+
+## Navigation
+
+**← Previous**: [Chapter 1: Welcome to AI Engineering](chapter-01-guide.md)
+
+**Next →**: [Chapter 3: Development Environment](chapter-03-guide.md)
 

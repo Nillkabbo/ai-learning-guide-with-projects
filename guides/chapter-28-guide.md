@@ -4,6 +4,13 @@
 
 This chapter covers building complex AI workflows using orchestration engines. You'll learn DAGs (Directed Acyclic Graphs), workflow orchestrators, error recovery, human-in-the-loop patterns, and building complete automated workflows.
 
+
+## Navigation
+
+**← Previous**: [Chapter 27: RAG (Retrieval Augmented Generation)](chapter-27-guide.md)
+
+**Next →**: [Chapter 29: Emerging Patterns and Future Trends](chapter-29-guide.md)
+
 ## Educator Perspective
 
 ### Teaching Strategy
@@ -218,3 +225,11 @@ A: For critical decisions, approvals, or when AI confidence is low.
 ## Next Chapter Preview
 
 Chapter 29 covers emerging patterns and future trends - what's coming next in AI.
+---
+
+## Navigation
+
+**← Previous**: [Chapter 27: RAG (Retrieval Augmented Generation)](chapter-27-guide.md)
+
+**Next →**: [Chapter 29: Emerging Patterns and Future Trends](chapter-29-guide.md)
+

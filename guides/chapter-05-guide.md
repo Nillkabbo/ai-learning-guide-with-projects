@@ -4,6 +4,13 @@
 
 This chapter is your complete, hands-on guide to the OpenAI API. You'll move from simple API calls to sophisticated applications using function calling, vision, and audio. This is where theory meets practice—you'll build real applications.
 
+
+## Navigation
+
+**← Previous**: [Chapter 4: AI Capabilities & Limitations](chapter-04-guide.md)
+
+**Next →**: [Chapter 6: Anthropic Claude API Mastery](chapter-06-guide.md)
+
 ## Educator Perspective
 
 ### Teaching Strategy
@@ -257,3 +264,11 @@ A: You control execution. Always validate inputs and handle errors.
 ## Next Chapter Preview
 
 Chapter 6 covers the Anthropic Claude API, showing how different providers have similar but distinct APIs.
+---
+
+## Navigation
+
+**← Previous**: [Chapter 4: AI Capabilities & Limitations](chapter-04-guide.md)
+
+**Next →**: [Chapter 6: Anthropic Claude API Mastery](chapter-06-guide.md)
+

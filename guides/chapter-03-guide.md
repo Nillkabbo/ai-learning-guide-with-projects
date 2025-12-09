@@ -4,6 +4,13 @@
 
 This chapter focuses on setting up a professional, secure development environment for AI work. While it may seem like "setup," these practices are critical for building real applications. Proper environment setup prevents security issues, dependency conflicts, and makes collaboration easier.
 
+
+## Navigation
+
+**← Previous**: [Chapter 2: Core Concepts](chapter-02-guide.md)
+
+**Next →**: [Chapter 4: AI Capabilities & Limitations](chapter-04-guide.md)
+
 ## Educator Perspective
 
 ### Teaching Strategy
@@ -378,4 +385,11 @@ Chapter 4 will cover:
 - Understanding what AI can and cannot do
 - Building realistic expectations
 - This builds on your development setup
+---
+
+## Navigation
+
+**← Previous**: [Chapter 2: Core Concepts](chapter-02-guide.md)
+
+**Next →**: [Chapter 4: AI Capabilities & Limitations](chapter-04-guide.md)
 

@@ -4,6 +4,13 @@
 
 This chapter introduces the Anthropic Claude API as an alternative to OpenAI. Claude is known for strong reasoning, large context windows, and focus on helpful, harmless, honest AI. You'll learn Claude's API structure, system prompts, document analysis, tool use, and vision capabilities.
 
+
+## Navigation
+
+**← Previous**: [Chapter 5: OpenAI API Complete Guide](chapter-05-guide.md)
+
+**Next →**: [Chapter 7: Google Gemini API Guide](chapter-07-guide.md)
+
 ## Educator Perspective
 
 ### Teaching Strategy
@@ -214,3 +221,11 @@ A: Yes! Many apps use multiple providers for different tasks.
 ## Next Chapter Preview
 
 Chapter 7 covers Google Gemini API, completing the trio of major AI providers.
+---
+
+## Navigation
+
+**← Previous**: [Chapter 5: OpenAI API Complete Guide](chapter-05-guide.md)
+
+**Next →**: [Chapter 7: Google Gemini API Guide](chapter-07-guide.md)
+

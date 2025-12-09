@@ -4,6 +4,13 @@
 
 This chapter covers RAG (Retrieval-Augmented Generation) - the most important technique for knowledge-intensive AI applications. You'll learn the RAG workflow, document indexing, semantic search, vector databases, and building complete RAG systems.
 
+
+## Navigation
+
+**← Previous**: [Chapter 26: Fine-Tuning Custom Models](chapter-26-guide.md)
+
+**Next →**: [Chapter 28: AI Workflows and Orchestration](chapter-28-guide.md)
+
 ## Educator Perspective
 
 ### Teaching Strategy
@@ -217,3 +224,11 @@ A: Start with 3-5, adjust based on context window.
 ## Next Chapter Preview
 
 Chapter 28 covers AI workflows and orchestration - building complex, multi-step AI processes.
+---
+
+## Navigation
+
+**← Previous**: [Chapter 26: Fine-Tuning Custom Models](chapter-26-guide.md)
+
+**Next →**: [Chapter 28: AI Workflows and Orchestration](chapter-28-guide.md)
+

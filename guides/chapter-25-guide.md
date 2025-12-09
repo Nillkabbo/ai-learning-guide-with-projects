@@ -4,6 +4,13 @@
 
 This chapter covers deploying AI applications to production safely. You'll learn containerization, CI/CD pipelines, environment management, zero-downtime deployments, feature flags, rollback strategies, and building complete DevOps systems.
 
+
+## Navigation
+
+**← Previous**: [Chapter 24: Testing AI Systems](chapter-24-guide.md)
+
+**Next →**: [Chapter 26: Fine-Tuning Custom Models](chapter-26-guide.md)
+
 ## Educator Perspective
 
 ### Teaching Strategy
@@ -217,3 +224,11 @@ A: Use feature flags to switch back to previous model version.
 ## Next Chapter Preview
 
 Chapter 26 covers fine-tuning custom models - training models on your data.
+---
+
+## Navigation
+
+**← Previous**: [Chapter 24: Testing AI Systems](chapter-24-guide.md)
+
+**Next →**: [Chapter 26: Fine-Tuning Custom Models](chapter-26-guide.md)
+

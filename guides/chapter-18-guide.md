@@ -4,6 +4,13 @@
 
 This chapter covers building real-time AI applications with minimal latency. You'll learn WebSockets, background workers (Celery), caching strategies, rate limiting, priority queuing, and building complete real-time systems.
 
+
+## Navigation
+
+**← Previous**: [Chapter 17: Building AI-Powered Web Applications](chapter-17-guide.md)
+
+**Next →**: [Chapter 19: AI Application Architecture Patterns](chapter-19-guide.md)
+
 ## Educator Perspective
 
 ### Teaching Strategy
@@ -211,3 +218,11 @@ A: Cache frequently repeated operations. Measure hit rates.
 ## Next Chapter Preview
 
 Chapter 19 covers AI application architecture patterns - monoliths, microservices, event-driven systems.
+---
+
+## Navigation
+
+**← Previous**: [Chapter 17: Building AI-Powered Web Applications](chapter-17-guide.md)
+
+**Next →**: [Chapter 19: AI Application Architecture Patterns](chapter-19-guide.md)
+
