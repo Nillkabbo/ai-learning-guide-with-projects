@@ -29,8 +29,11 @@ This is a comprehensive, structured learning system designed to help you master 
 
 ```
 learning-guide/
+├── README.md                        # This file - Start here!
+├── MASTER_INDEX.md                  # Complete navigation and progress tracking
 ├── LEARNING_METHODOLOGY.md          # Reusable learning framework
-├── README.md                        # This file
+├── ATTRIBUTION.md                   # Credits and license information
+├── COMPLETION_REPORT.md             # System validation and statistics
 ├── guides/                          # Chapter-by-chapter learning guides
 │   ├── chapter-01-guide.md
 │   ├── chapter-02-guide.md
@@ -45,11 +48,16 @@ learning-guide/
     └── ... (30 total)
 ```
 
+**Quick Links:**
+- 📚 [Master Index](MASTER_INDEX.md) - Navigate all chapters
+- 📖 [Learning Methodology](LEARNING_METHODOLOGY.md) - Understand the approach
+- 👤 [Attribution](ATTRIBUTION.md) - Credits and license
+
 ## How to Use This Guide
 
 ### For Self-Learners
 
-1. **Start with the Methodology**: Read `LEARNING_METHODOLOGY.md` to understand the approach
+1. **Start with the Methodology**: Read [LEARNING_METHODOLOGY.md](LEARNING_METHODOLOGY.md) to understand the approach
 2. **Follow Chapter Order**: Work through chapters sequentially (they build on each other)
 3. **Use the Guides**: Each chapter guide provides:
    - Learning objectives
@@ -73,13 +81,14 @@ learning-guide/
 ## Learning Paths
 
 ### Complete Beginner Path (Recommended)
-- Start with Chapter 1 and proceed sequentially
-- Complete all projects
-- Review cursor rules regularly
+- Start with [Chapter 1](guides/chapter-01-guide.md) and proceed sequentially
+- Complete all [projects](projects/)
+- Review [cursor rules](.cursorrules/) regularly
+- Track progress using [MASTER_INDEX.md](MASTER_INDEX.md)
 - Estimated time: 12-16 weeks (part-time)
 
 ### Quick Start Path
-- Chapters 1, 3, 5, 9, 17
+- [Chapter 1](guides/chapter-01-guide.md), [Chapter 3](guides/chapter-03-guide.md), [Chapter 5](guides/chapter-05-guide.md), [Chapter 9](guides/chapter-09-guide.md), [Chapter 17](guides/chapter-17-guide.md)
 - Focus on practical application
 - Estimated time: 4-6 weeks
 
@@ -95,13 +104,16 @@ learning-guide/
 - Self-contained
 - Focus on specific chapter concepts
 - Can be completed independently
-- Examples: Chapters 26, 27, 28, 29, 30
+- Examples: [Chapter 26](projects/chapter-26-project/), [Chapter 27](projects/chapter-27-project/), [Chapter 28](projects/chapter-28-project/), [Chapter 29](projects/chapter-29-project/), [Chapter 30](projects/chapter-30-project/)
 
 ### Cumulative Projects
 - Build on previous chapters
 - Demonstrate integration
 - Show real-world complexity
-- Examples: Chapters 1-4 (IoT Foundation), 5-8 (API Wrapper), 9-12 (Prompt Library)
+- Examples: 
+  - Chapters 1-4: [IoT Foundation Projects](projects/chapter-01-project/) through [Chapter 4](projects/chapter-04-project/)
+  - Chapters 5-8: [API Wrapper Projects](projects/chapter-05-project/) through [Chapter 8](projects/chapter-08-project/)
+  - Chapters 9-12: [Prompt Library Projects](projects/chapter-09-project/) through [Chapter 12](projects/chapter-12-project/)
 
 ## Progress Tracking
 
@@ -160,11 +172,12 @@ Cursor rules maintain context across learning sessions:
 
 ## Next Steps
 
-1. Read `LEARNING_METHODOLOGY.md` for the complete framework
-2. Start with `guides/chapter-01-guide.md`
-3. Complete `projects/chapter-01-project/`
-4. Review `.cursorrules/chapter-01.cursorrules`
-5. Continue to Chapter 2
+1. Read [LEARNING_METHODOLOGY.md](LEARNING_METHODOLOGY.md) for the complete framework
+2. Check the [MASTER_INDEX.md](MASTER_INDEX.md) for complete navigation
+3. Start with [Chapter 1 Guide](guides/chapter-01-guide.md)
+4. Complete [Chapter 1 Project](projects/chapter-01-project/)
+5. Review [Chapter 1 Cursor Rules](.cursorrules/chapter-01.cursorrules)
+6. Continue to Chapter 2
 
 ## Contributing
 
@@ -176,10 +189,15 @@ This learning guide is designed to be:
 
 ## Resources
 
-- **Main Book**: See `../chapters/` for the original content
-- **Methodology**: See `LEARNING_METHODOLOGY.md` for the learning framework
-- **Projects**: See `projects/` for hands-on practice
-- **Context**: See `.cursorrules/` for maintaining knowledge
+- **Master Index**: [MASTER_INDEX.md](MASTER_INDEX.md) - Complete navigation and progress tracking
+- **Methodology**: [LEARNING_METHODOLOGY.md](LEARNING_METHODOLOGY.md) - Reusable learning framework
+- **Attribution**: [ATTRIBUTION.md](ATTRIBUTION.md) - Credits and license information
+- **Completion Report**: [COMPLETION_REPORT.md](COMPLETION_REPORT.md) - System validation and statistics
+- **Projects**: [projects/](projects/) - Hands-on practice for all 30 chapters
+- **Guides**: [guides/](guides/) - Chapter-by-chapter learning guides
+- **Cursor Rules**: [.cursorrules/](.cursorrules/) - Context management files
+
+**Note**: The original book chapters are in the parent repository. This learning guide is a companion resource that provides structured learning paths, projects, and context management tools.
 
 ---
 
