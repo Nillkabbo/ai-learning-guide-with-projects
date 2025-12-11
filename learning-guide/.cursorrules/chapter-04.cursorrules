@@ -1,0 +1,92 @@
+# Chapter 4: Understanding AI Capabilities and Limitations - Cursor Rules
+
+## Chapter Context
+
+This chapter teaches critical understanding of AI capabilities and limitations. Students learn when to trust AI, when to be skeptical, and how to implement safeguards. This is foundational knowledge for responsible AI development.
+
+## Key Concepts
+
+### AI Strengths
+- Text understanding and generation
+- Pattern recognition
+- Code generation
+- Language tasks
+- Creative tasks
+
+### AI Weaknesses
+- Mathematical calculations (unreliable)
+- Real-time information (no access)
+- Precise logical reasoning (probabilistic)
+- Specific factual claims (may hallucinate)
+
+### Hallucinations
+- AI generates plausible but false information
+- Happens because AI predicts tokens, not truth
+- Can be confident and convincing
+- Must always verify critical facts
+
+### Safeguards
+- Confidence scoring
+- Verification layers
+- Question classification
+- Hybrid approaches (AI + code)
+- Never blindly trust facts
+
+## Important Code Patterns
+
+### Safe Math Solver
+```python
+# Use AI to generate code, not solve directly
+code_prompt = f"Convert to Python: '{math_problem}'"
+code = ai.generate(code_prompt)
+result = eval(code)  # WARNING: Only in safe contexts
+```
+
+### Confidence Scoring
+```python
+system_msg = "Add 'Confidence: [1-10]' to your response"
+response = ai.chat(system_msg, user_prompt)
+# Parse confidence from response
+```
+
+### Question Classification
+```python
+def classify_question(q: str) -> str:
+    if "calculate" in q.lower() and any(c.isdigit() for c in q):
+        return "math"
+    if "current" in q.lower() or "now" in q.lower():
+        return "realtime"
+    return "general"
+```
+
+### Verification Layer
+```python
+# Step 1: Get answer
+answer = ai.answer(question)
+
+# Step 2: Verify claims
+verification = ai.verify(answer, "List factual claims needing verification")
+
+# Step 3: Flag for human review
+if verification.claims:
+    flag_for_review(answer, verification)
+```
+
+## Common Mistakes to Avoid
+
+1. **Trusting AI for Math**: Always use code generation + execution
+2. **Believing Hallucinations**: Always verify critical facts
+3. **No Safeguards**: Always implement at least basic safeguards
+4. **Blind Trust**: Never trust AI output without critical thinking
+5. **Ignoring Confidence**: Low confidence = high skepticism needed
+
+## Integration Points
+
+- **Chapter 1-3**: Builds on basic AI knowledge
+- **Chapter 5+**: Applies safeguards to all applications
+- **Chapter 22**: Security extends these concepts
+
+## Project Context
+
+Safe IoT Assistant project demonstrates all safeguard patterns in a practical application.
+

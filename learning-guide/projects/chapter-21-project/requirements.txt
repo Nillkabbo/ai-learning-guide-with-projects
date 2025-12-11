@@ -1,0 +1,16 @@
+# Chapter 21 Project Requirements
+
+# Core AI library
+openai>=1.0.0
+
+# Token counting
+tiktoken>=0.5.0
+
+# Caching
+cachetools>=5.3.0
+
+# Environment variable management
+python-dotenv>=1.0.0
+
+# Data visualization (optional)
+# matplotlib>=3.7.0

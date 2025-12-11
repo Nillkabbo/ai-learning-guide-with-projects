@@ -1,0 +1,13 @@
+# Chapter 3 Project Requirements
+
+# Core AI library (choose one)
+openai>=1.0.0
+
+# Environment variable management (REQUIRED for security)
+python-dotenv>=1.0.0
+
+# Optional: Token counting (from Chapter 2)
+tiktoken>=0.5.0
+
+# Optional: Local AI alternative
+# ollama>=0.1.0

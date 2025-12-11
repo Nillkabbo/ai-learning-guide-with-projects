@@ -1,0 +1,109 @@
+# Chapter 23: Monitoring and Observability in AI Systems - Cursor Rules
+
+## Chapter Context
+
+This chapter covers monitoring and observability for AI systems. Students learn structured logging, AI-specific metrics, distributed tracing, dashboards, and automated alerts. Essential for understanding AI system health and performance.
+
+## Key Concepts
+
+### 1. Why Observability Matters
+- AI failures are silent (no crashes, subtle degradation)
+- Quality can degrade without errors
+- Costs can spike without warnings
+- Need observability to understand system state
+- Three pillars: logs, metrics, traces
+
+### 2. Structured Logging
+- JSON format (machine-readable)
+- Rich context (prompt, response, tokens, latency)
+- Queryable (search, filter, analyze)
+- structlog library for Python
+- Log all AI interactions
+
+### 3. AI-Specific Metrics
+- Token metrics (input, output, total)
+- Cost metrics (per request, per user, per model)
+- Quality metrics (hallucination rate, accuracy)
+- Latency metrics (P50, P95, P99)
+- Cache hit ratio
+- Error rates
+
+### 4. Distributed Tracing
+- Follow request through multiple services
+- Essential for prompt chains
+- Multi-agent systems
+- Performance analysis
+- OpenTelemetry standard
+
+### 5. Dashboards and Alerts
+- Real-time visualization
+- Prometheus for metrics
+- Grafana for dashboards
+- Automated alerts
+- Incident response
+
+## Important Code Patterns
+
+### Structured Logging
+```python
+import structlog
+
+structlog.configure(
+    processors=[
+        structlog.stdlib.add_log_level,
+        structlog.processors.TimeStamper(fmt="iso"),
+        structlog.processors.JSONRenderer(),
+    ]
+)
+log = structlog.get_logger()
+
+def monitored_ai_call(prompt: str, user_id: str):
+    request_id = str(uuid.uuid4())
+    start_time = datetime.now()
+    
+    log.info("ai_call_start", request_id=request_id, user_id=user_id, prompt_length=len(prompt))
+    
+    response = ai.call(prompt)
+    latency_ms = (datetime.now() - start_time).total_seconds() * 1000
+    
+    log.info("ai_call_success", 
+             request_id=request_id,
+             latency_ms=latency_ms,
+             input_tokens=response.usage.prompt_tokens,
+             output_tokens=response.usage.completion_tokens)
+```
+
+### Metrics Tracking
+```python
+from prometheus_client import Counter, Histogram
+
+ai_requests = Counter('ai_requests_total', 'Total AI requests', ['model', 'status'])
+ai_latency = Histogram('ai_latency_seconds', 'AI request latency', ['model'])
+ai_cost = Counter('ai_cost_usd', 'Total AI cost in USD', ['model'])
+
+def track_ai_call(model: str, latency: float, cost: float, success: bool):
+    status = 'success' if success else 'error'
+    ai_requests.labels(model=model, status=status).inc()
+    ai_latency.labels(model=model).observe(latency)
+    ai_cost.labels(model=model).inc(cost)
+```
+
+## Common Mistakes to Avoid
+
+1. **Print statements**: Use structured logging
+2. **No metrics**: Can't optimize what you don't measure
+3. **No tracing**: Can't debug complex systems
+4. **No alerts**: Problems go unnoticed
+5. **Logging sensitive data**: Privacy and security issues
+
+## Integration Points
+
+- **Chapter 8**: API patterns (add observability)
+- **Chapter 20**: Scaling (monitoring essential)
+- **Chapter 22**: Security (security monitoring)
+
+## Related Chapters
+
+- **Chapter 8**: API patterns (add observability)
+- **Chapter 20**: Scaling (monitoring essential)
+- **Chapter 22**: Security (security monitoring)
