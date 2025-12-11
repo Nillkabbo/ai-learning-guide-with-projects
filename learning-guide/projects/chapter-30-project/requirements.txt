@@ -1,8 +1,0 @@
-# Chapter 30 Project Requirements
-
-# This project is primarily documentation/planning focused
-# No specific code dependencies required
-
-# Optional: For any prototyping
-# openai>=1.0.0
-# python-dotenv>=1.0.0
