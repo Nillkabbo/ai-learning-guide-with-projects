@@ -1,0 +1,134 @@
+# Chapter 14: Giving Your Agent Tools - Cursor Rules
+
+## Chapter Context
+
+This chapter teaches tool use and function calling - giving agents the ability to act. Students learn the tool-use loop, implement function calling across providers, design schemas, build registries, and secure execution. Critical for building capable agents.
+
+## Key Concepts
+
+### 1. Tool-Use Loop
+- **Step 1**: AI decides to use tool (returns tool call)
+- **Step 2**: You execute the tool function
+- **Step 3**: Send tool result back to AI
+- **Step 4**: AI uses result to generate final response
+- Universal pattern across providers
+
+### 2. Tool Descriptions (Schemas)
+- JSON schema format
+- Function name and description
+- Parameter definitions
+- Type specifications
+- Required vs. optional
+
+### 3. Provider Differences
+- **OpenAI**: Native `tools` parameter, `tool_calls` in response
+- **Claude**: `tools` parameter, `tool_use` blocks
+- **Gemini**: `tools` parameter, `function_calls`
+- **Ollama**: Prompt-based (no native support), JSON parsing
+
+### 4. Tool Registries
+- Centralized tool management
+- Tool discovery
+- Execution routing
+- Security enforcement
+
+### 5. Secure Execution
+- Input validation
+- Permission checks
+- Sandboxing (if needed)
+- Audit logging
+- Error handling
+
+## Important Code Patterns
+
+### Tool-Use Loop (OpenAI)
+```python
+# Step 1: AI decides
+response = client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=messages,
+    tools=tools
+)
+
+# Step 2: Check for tool calls
+if response.choices[0].message.tool_calls:
+    tool_call = response.choices[0].message.tool_calls[0]
+    function_name = tool_call.function.name
+    arguments = json.loads(tool_call.function.arguments)
+    
+    # Step 3: Execute tool
+    result = execute_tool(function_name, arguments)
+    
+    # Step 4: Send result back
+    messages.append(response.choices[0].message)
+    messages.append({
+        "role": "tool",
+        "tool_call_id": tool_call.id,
+        "content": result
+    })
+    
+    # Get final response
+    final_response = client.chat.completions.create(...)
+```
+
+### Tool Schema
+```python
+tool_schema = {
+    "type": "function",
+    "function": {
+        "name": "get_device_status",
+        "description": "Gets the current status of an IoT device",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "device_id": {
+                    "type": "string",
+                    "description": "The ID of the device to check"
+                }
+            },
+            "required": ["device_id"]
+        }
+    }
+}
+```
+
+### Tool Registry
+```python
+class ToolRegistry:
+    def __init__(self):
+        self.tools = {}
+        self.schemas = []
+    
+    def register(self, name, func, schema):
+        self.tools[name] = func
+        self.schemas.append(schema)
+    
+    def execute(self, name, args):
+        if name not in self.tools:
+            raise ValueError(f"Tool {name} not found")
+        # Validate args
+        # Check permissions
+        # Execute
+        return self.tools[name](**args)
+```
+
+## Common Mistakes to Avoid
+
+1. **No input validation**: Always validate tool inputs
+2. **Unsafe execution**: Never execute arbitrary code
+3. **No error handling**: Tools can fail
+4. **Missing tool results**: Always send results back
+5. **Infinite loops**: Limit tool call chains
+6. **No permissions**: Check before executing
+
+## Integration Points
+
+- **Chapter 13**: Agents need tools to act
+- **Chapter 15**: Production agents use these patterns
+- **Chapter 16**: Multi-agent systems share tools
+
+## Related Chapters
+
+- **Chapter 13**: Agents (foundation)
+- **Chapter 15**: Production agents (extends concepts)
+- **Chapter 16**: Multi-agent (tool sharing)

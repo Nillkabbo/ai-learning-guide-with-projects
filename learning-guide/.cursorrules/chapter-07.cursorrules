@@ -1,0 +1,86 @@
+# Chapter 7: Mastering the Google Gemini API - Cursor Rules
+
+## Chapter Context
+
+This chapter introduces Google Gemini API, which is multimodal-native. Students learn to process text, images, audio, video, and PDFs seamlessly. Key focus: multimodal capabilities and when to use Gemini.
+
+## Key Concepts
+
+### 1. API Structure
+- Library: `google-generativeai`
+- Pattern: `genai.configure()` then `GenerativeModel()`
+- Method: `model.generate_content()`
+- Response: `response.text`
+- Object-oriented, simple API
+
+### 2. System Instructions
+- `system_instruction` parameter
+- Set when creating model
+- Guides behavior
+- Similar to system prompts
+
+### 3. Multimodal Native
+- Text + images in same call
+- Video processing
+- PDF analysis
+- Audio support
+- Seamless integration
+
+### 4. Model Selection
+- `gemini-1.5-flash`: Fast, cost-effective
+- `gemini-1.5-pro`: Complex reasoning, long context
+- Choose based on task complexity
+
+### 5. Function Calling
+- Similar to OpenAI/Claude
+- Tool descriptions
+- Function execution
+- Result feedback
+
+## Important Code Patterns
+
+### Basic Call
+```python
+import google.generativeai as genai
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+model = genai.GenerativeModel('gemini-1.5-flash')
+response = model.generate_content("Hello!")
+print(response.text)
+```
+
+### System Instructions
+```python
+model = genai.GenerativeModel(
+    'gemini-1.5-pro',
+    system_instruction="You are an expert..."
+)
+response = model.generate_content("...")
+```
+
+### Multimodal
+```python
+response = model.generate_content([
+    "Analyze this image and data:",
+    sensor_data,
+    image_file
+])
+```
+
+## Common Mistakes to Avoid
+
+1. **Forgetting to configure**: Always call `genai.configure()` first
+2. **Wrong model choice**: Use Flash for speed, Pro for complexity
+3. **Not leveraging multimodal**: Gemini's strength is multimodal
+4. **Ignoring video/PDF**: Unique Gemini capabilities
+
+## Integration Points
+
+- **Chapters 5-6**: Compare with OpenAI/Claude
+- **Chapter 8**: API patterns apply
+- **Chapter 17**: Web applications use multimodal
+
+## Related Chapters
+
+- **Chapter 5**: OpenAI API (compare)
+- **Chapter 6**: Claude API (compare)
+- **Chapter 8**: API design patterns

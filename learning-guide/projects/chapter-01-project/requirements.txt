@@ -1,0 +1,13 @@
+# Chapter 1 Project Requirements
+
+# Choose ONE of the following based on your preference:
+
+# Option 1: OpenAI (Cloud-based, requires API key)
+openai>=1.0.0
+
+# Option 2: Ollama (Local, no API key needed)
+# ollama>=0.1.0
+
+# Optional: For colored output (if implementing extended features)
+# colorama>=0.4.6
+

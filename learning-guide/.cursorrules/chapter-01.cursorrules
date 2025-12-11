@@ -1,0 +1,175 @@
+# Chapter 1: Welcome to AI Engineering - Cursor Rules
+
+## Chapter Context
+
+This is the foundational chapter introducing AI engineering concepts. Students learn the basic pattern of AI interactions: prompts and responses, message roles, and how to make their first AI API calls.
+
+## Key Concepts
+
+### 1. Large Language Models (LLMs)
+- LLMs are computer programs trained on vast text data
+- They work like advanced autocomplete, recognizing patterns in language
+- Core interaction: prompt (input) → response (output)
+- They don't "understand" in human terms—they recognize patterns
+
+### 2. Paradigm Shift: Describing vs. Instructing
+- Traditional programming: explicit step-by-step instructions (HOW)
+- AI programming: describe the desired outcome (WHAT)
+- Both approaches have their place—AI doesn't replace traditional programming
+
+### 3. Message Structure
+- Conversations are lists of message dictionaries
+- Three roles:
+  - `system`: Sets AI's persona/behavior (most powerful tool)
+  - `user`: Your prompts/questions
+  - `assistant`: AI's previous responses (for context)
+- System message should be first and set the tone
+
+### 4. API Integration
+- OpenAI (cloud): Requires API key, uses `openai.OpenAI()` client
+- Ollama (local): No API key, uses `ollama.chat()` function
+- Both use same message structure, different response formats:
+  - OpenAI: `response.choices[0].message.content`
+  - Ollama: `response["message"]["content"]`
+
+## Important Code Patterns
+
+### Basic OpenAI Call
+```python
+import openai
+client = openai.OpenAI()
+response = client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[{"role": "user", "content": "Your prompt"}]
+)
+result = response.choices[0].message.content
+```
+
+### Basic Ollama Call
+```python
+import ollama
+response = ollama.chat(
+    model="llama2",
+    messages=[{"role": "user", "content": "Your prompt"}]
+)
+result = response["message"]["content"]
+```
+
+### Conversation with System Message
+```python
+messages = [
+    {"role": "system", "content": "You are a helpful assistant."},
+    {"role": "user", "content": "What is 2+2?"},
+    {"role": "assistant", "content": "2+2 is 4."},
+    {"role": "user", "content": "What about 3+3?"}
+]
+```
+
+## Common Mistakes to Avoid
+
+1. **Hard-coding API keys**: Always use environment variables
+2. **Forgetting system messages**: AI needs context to behave correctly
+3. **Wrong message order**: System message should be first
+4. **Not handling errors**: API calls can fail—handle exceptions
+5. **Confusing OpenAI and Ollama response structures**: They're different
+6. **Not testing with different inputs**: AI responses vary—test thoroughly
+
+## Integration Points
+
+### Prerequisites
+- Basic Python knowledge (variables, functions, imports)
+- Understanding of APIs (basic concept)
+- Code editor set up
+
+### Next Chapter Preparation
+- Chapter 2 builds on message structure
+- Introduces tokens (how AI "sees" text)
+- Covers embeddings (how AI understands meaning)
+- Explains context windows (AI's memory limits)
+
+## Project Context
+
+### Chapter 1 Project: IoT Device Status Dashboard
+- **Type**: Standalone (but foundational for all future projects)
+- **Focus**: Basic AI calls, message roles, practical application
+- **Key Skills**: API integration, message structuring, user interaction
+- **Extension Opportunities**: Multi-device support, severity detection, history
+
+## Code Style and Best Practices
+
+### For This Chapter
+- Keep code simple and readable
+- Comment key concepts (message roles, API calls)
+- Use clear variable names (`system_message`, not `sm`)
+- Handle errors gracefully
+- Support both OpenAI and Ollama when possible
+
+### Security
+- Never commit API keys to version control
+- Use environment variables: `os.getenv("OPENAI_API_KEY")`
+- Add `.env` to `.gitignore`
+- Rotate keys if exposed
+
+### Error Handling
+```python
+try:
+    response = client.chat.completions.create(...)
+    return response.choices[0].message.content
+except Exception as e:
+    return f"Error: {str(e)}"
+```
+
+## Learning Progression
+
+### What Students Should Master
+1. ✅ Can explain what an LLM is in simple terms
+2. ✅ Can write code to make an AI call
+3. ✅ Understands message roles (system, user, assistant)
+4. ✅ Can build a simple AI application
+5. ✅ Knows when to use AI vs traditional programming
+
+### Common Student Questions
+- "Do I need to understand neural networks?" → No, think of it like driving a car
+- "Which is better, OpenAI or Ollama?" → Start with OpenAI, use Ollama for privacy/cost
+- "Why do I need system messages?" → They set AI's behavior and context
+- "Can AI replace all programming?" → No, it's a tool, not a replacement
+
+## Technical Notes
+
+### LLM Workflow (Simplified)
+1. Tokenization: Text → Tokens
+2. Embedding: Tokens → Vectors (numbers)
+3. Prediction: Neural network calculates next tokens
+4. Decoding: Vectors → Text
+
+### Why Context Matters
+- More context = better pattern recognition
+- System messages provide high-level context
+- Conversation history provides specific context
+- Examples in prompts help AI understand patterns
+
+## Related Chapters
+
+- **Chapter 2**: Tokens, embeddings, context windows (builds on message structure)
+- **Chapter 3**: Development environment setup (extends API setup)
+- **Chapter 5**: Complete OpenAI API guide (deepens API knowledge)
+- **Chapter 9**: Prompt engineering (extends system message concepts)
+
+## Memory Context for Next Session
+
+When continuing to Chapter 2, remember:
+- Students understand basic AI calls
+- They know message roles and structure
+- They've built their first AI application
+- They understand the prompt-response pattern
+- They may have questions about tokens (Chapter 2 addresses this)
+
+## Project-Specific Context
+
+The IoT Device Status Dashboard project:
+- Reinforces all Chapter 1 concepts
+- Uses system messages effectively
+- Demonstrates practical application
+- Sets pattern for future projects
+- Should be completable in 2-3 hours for beginners
+

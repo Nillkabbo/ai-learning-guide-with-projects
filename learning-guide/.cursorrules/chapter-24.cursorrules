@@ -1,0 +1,98 @@
+# Chapter 24: Testing AI Systems - Cursor Rules
+
+## Chapter Context
+
+This chapter covers testing non-deterministic AI systems. Students learn unit testing with mocks, integration testing, AI regression testing, load testing, and building complete test suites. Essential for maintaining quality in production.
+
+## Key Concepts
+
+### 1. Testing Challenges
+- AI is non-deterministic (same input ≠ same output)
+- Can't test for exactness
+- Real API calls are expensive and slow
+- Need to test quality, not exactness
+- Probabilistic nature requires different approach
+
+### 2. Unit Testing with Mocks
+- Mock API calls (no real calls)
+- Test prompt construction (deterministic)
+- Test response handling (deterministic)
+- Fast, deterministic tests
+- pytest and unittest.mock
+
+### 3. Integration Testing
+- Test full workflows
+- Real API calls (limited, controlled)
+- Test prompt chains
+- Validate end-to-end
+- Staging environment
+
+### 4. AI Regression Testing
+- Golden dataset (curated test cases)
+- AI as judge (score response quality)
+- Quality scoring (not exactness)
+- Prevent degradation
+- Automated in CI/CD
+
+### 5. Load Testing
+- Performance under load
+- Cost under load
+- Rate limit handling
+- Scalability testing
+- Stress testing
+
+## Important Code Patterns
+
+### Unit Test with Mock
+```python
+import pytest
+from unittest.mock import Mock, patch
+from app.analyzer import analyze_device_status
+
+def test_analyze_device_status(mocker):
+    # Mock the OpenAI client
+    mock_response = Mock()
+    mock_response.choices[0].message.content = "Device is healthy"
+    
+    mock_client = Mock()
+    mock_client.chat.completions.create.return_value = mock_response
+    
+    with patch('app.analyzer.client', mock_client):
+        result = analyze_device_status("DEV-001", "online", 85)
+        assert "healthy" in result.lower()
+        mock_client.chat.completions.create.assert_called_once()
+```
+
+### AI Regression Test
+```python
+def test_ai_regression(golden_dataset, ai_judge):
+    """Test that AI quality doesn't degrade."""
+    scores = []
+    for test_case in golden_dataset:
+        response = ai.analyze(test_case.input)
+        score = ai_judge.score(test_case.expected_quality, response)
+        scores.append(score)
+    
+    average_score = sum(scores) / len(scores)
+    assert average_score >= 8.0, f"Quality degraded: {average_score}"
+```
+
+## Common Mistakes to Avoid
+
+1. **Testing for exactness**: AI is non-deterministic
+2. **Real API calls in unit tests**: Slow, expensive, flaky
+3. **No regression tests**: Quality degrades unnoticed
+4. **No load testing**: System fails under load
+5. **Ignoring test failures**: Tests must be reliable
+
+## Integration Points
+
+- **Chapter 8**: API patterns (test API code)
+- **Chapter 25**: Deployment (tests in CI/CD)
+- **Chapter 23**: Monitoring (test monitoring)
+
+## Related Chapters
+
+- **Chapter 8**: API patterns (test API code)
+- **Chapter 25**: Deployment (tests in CI/CD)
+- **Chapter 23**: Monitoring (test monitoring)
