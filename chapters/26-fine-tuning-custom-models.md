@@ -104,6 +104,8 @@ print("Dataset created successfully.")
 
 Once your `.jsonl` file is ready, you upload it to OpenAI. The API will validate it and return a file ID.
 
+#### Using OpenAI
+
 ```python
 import openai
 client = openai.OpenAI()
@@ -118,6 +120,67 @@ with open("training_data.jsonl", "rb") as f:
 print(f"File uploaded successfully. File ID: {training_file.id}")
 # Save this File ID! You'll need it for the next step.
 ```
+
+#### Using Ollama
+
+**Note**: Ollama doesn't provide a direct fine-tuning API like OpenAI. Fine-tuning with Ollama typically requires:
+
+1. **Using Modelfiles**: Create a Modelfile that includes system prompts and parameters to customize model behavior
+2. **Parameter Quantization**: Adjust model parameters for specific use cases
+3. **External Fine-Tuning Tools**: Use tools like `llama.cpp` or `unsloth` to fine-tune base models, then import them into Ollama
+
+For most use cases, you can achieve similar results with:
+- **System prompts in Modelfiles**: Define consistent behavior patterns
+- **Few-shot prompting**: Include examples in your prompts
+- **RAG (Chapter 27)**: For knowledge-specific tasks
+
+Here's an example of creating a custom Modelfile for Ollama:
+
+```python
+# create_modelfile.py
+def create_iot_classifier_modelfile(base_model: str = "llama2", output_file: str = "Modelfile"):
+    """Creates a Modelfile for an IoT log classifier using Ollama."""
+    
+    modelfile_content = f"""FROM {base_model}
+
+# System prompt for IoT log classification
+SYSTEM \"\"\"You are an IoT log classifier. Your task is to classify log messages into one of these categories: Connectivity, Power, Sensor_Fault, Security.
+
+Always respond with only the category name, nothing else.
+\"\"\"
+
+# Example few-shot prompts
+TEMPLATE \"\"\"{{{{ .System }}}}
+
+User: Log: Device GW-01 failed to connect to MQTT broker after 3 retries.
+Assistant: Connectivity
+
+User: Log: Battery level on SENSOR-112 is at 4%. Immediate action required.
+Assistant: Power
+
+User: Log: Temperature reading on TEMP-08 is -999.0, indicating sensor failure.
+Assistant: Sensor_Fault
+
+User: Log: Multiple failed login attempts detected from IP 1.2.3.4 for ADMIN-PANEL.
+Assistant: Security
+
+User: {{{{ .Prompt }}}}
+Assistant:\"\"\"
+
+PARAMETER temperature 0.0
+PARAMETER top_p 0.9
+"""
+    
+    with open(output_file, 'w') as f:
+        f.write(modelfile_content)
+    
+    print(f"Modelfile created: {output_file}")
+    print("To create the model, run: ollama create iot-classifier -f Modelfile")
+
+create_iot_classifier_modelfile()
+```
+
+**Important**: For true fine-tuning (updating model weights), you'll need to use external tools. Ollama's Modelfile approach is more like advanced prompt engineering rather than actual fine-tuning.
 
 ### Step 3: Creating the Fine-Tuning Job
 

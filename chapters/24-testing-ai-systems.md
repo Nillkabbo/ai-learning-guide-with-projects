@@ -78,6 +78,8 @@ We don't want our unit tests to make real, expensive, and slow network calls to 
 
 Let's expand our example with a function that makes the actual call.
 
+#### Using OpenAI
+
 ```python
 # app/analyzer.py
 import openai
@@ -94,6 +96,28 @@ def analyze_device_status(device_id: str, status: str, battery: int) -> str:
     )
     
     return response.choices[0].message.content
+```
+
+#### Using Ollama
+
+```python
+# app/analyzer.py
+import ollama
+import os
+
+OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'llama2')
+
+def analyze_device_status(device_id: str, status: str, battery: int, model: str = None) -> str:
+    """Calls the AI to analyze device status."""
+    model = model or OLLAMA_MODEL
+    prompt = create_analysis_prompt(device_id, status, battery)
+    
+    response = ollama.chat(
+        model=model,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    
+    return response['message']['content']
 ```
 
 Now, let's test this function *without* calling OpenAI, using `pytest-mock`.
@@ -137,11 +161,15 @@ Let's design a simple two-step chain:
 1.  **Step 1:** Classify an alert's severity.
 2.  **Step 2:** Based on the severity, generate a summary.
 
+#### Using OpenAI
+
 ```python
 # app/report_chain.py
+import openai
+
 class IoTReportChain:
-    def __init__(self, client):
-        self.client = client
+    def __init__(self, client=None):
+        self.client = client or openai.OpenAI()
 
     def run(self, alert: str) -> str:
         # Step 1: Classify severity
@@ -160,6 +188,37 @@ class IoTReportChain:
         )
         return summary_response.choices[0].message.content
 ```
+
+#### Using Ollama
+
+```python
+# app/report_chain.py
+import ollama
+import os
+
+class IoTReportChain:
+    def __init__(self, model: str = None):
+        self.model = model or os.getenv('OLLAMA_MODEL', 'llama2')
+
+    def run(self, alert: str) -> str:
+        # Step 1: Classify severity
+        severity_prompt = f"Classify the severity of this alert as 'Low', 'Medium', or 'High'. Alert: {alert}"
+        severity_response = ollama.chat(
+            model=self.model,
+            messages=[{"role": "user", "content": severity_prompt}]
+        )
+        severity = severity_response['message']['content'].strip()
+
+        # Step 2: Generate summary based on severity
+        summary_prompt = f"Write a one-sentence summary for a '{severity}' severity alert about: {alert}"
+        summary_response = ollama.chat(
+            model=self.model,
+            messages=[{"role": "user", "content": summary_prompt}]
+        )
+        return summary_response['message']['content']
+```
+
+**Note**: The testing patterns (mocking, integration testing, etc.) work identically for both OpenAI and Ollama. The key difference is in how you mock the API calls—use `ollama.chat` instead of `client.chat.completions.create` when testing Ollama-based code.
 
 Our integration test must verify that the `severity` from the first call is correctly used in the prompt for the second call. We can use `mocker`'s `side_effect` feature to return different mock responses for each call.
 

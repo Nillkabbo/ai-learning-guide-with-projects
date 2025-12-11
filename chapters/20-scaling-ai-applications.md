@@ -21,6 +21,8 @@ A traditional web application often scales predictably: more users mean more dat
 
 Let's look at a "bad" example to see what happens when we apply traditional thinking to an AI problem. This server will quickly fail under load.
 
+#### Using OpenAI
+
 ```python
 # A demonstration of what NOT to do. This will not scale.
 from fastapi import FastAPI
@@ -57,6 +59,48 @@ async def analyze_data_naively(device_id: str, data: dict):
 # - A few long-running AI calls can block all other requests.
 # - The server has no protection against API rate limits.
 # - It's inefficient and costly, with no caching.
+# - The in-memory state makes horizontal scaling impossible.
+```
+
+#### Using Ollama
+
+```python
+# A demonstration of what NOT to do. This will not scale.
+from fastapi import FastAPI
+import ollama
+import os
+
+app = FastAPI()
+OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'llama2')
+
+# BAD: Global, in-memory state. This will not work across multiple servers
+# and will be lost on restart. Memory will also grow indefinitely.
+conversations = {} 
+
+@app.post("/analyze/{device_id}")
+async def analyze_data_naively(device_id: str, data: dict):
+    """This endpoint demonstrates several critical scaling anti-patterns."""
+    
+    # 1. Synchronous AI Call: This blocks the server. If 10 users call this
+    #    at once, the 10th user might wait 30+ seconds for a response.
+    response = ollama.chat(
+        model=OLLAMA_MODEL,
+        messages=[{"role": "user", "content": f"Analyze this data: {data}"}]
+    )
+    analysis = response['message']['content']
+    
+    # 2. Unbounded Memory: This dictionary grows with every conversation,
+    #    eventually leading to an out-of-memory crash.
+    if device_id not in conversations:
+        conversations[device_id] = []
+    conversations[device_id].append(analysis)
+    
+    return {"analysis": analysis}
+
+# Problems with this approach:
+# - A few long-running AI calls can block all other requests.
+# - Local models may have resource constraints (CPU/GPU memory).
+# - It's inefficient with no caching.
 # - The in-memory state makes horizontal scaling impossible.
 ```
 
@@ -156,6 +200,8 @@ graph TD
 
 First, we define our AI task in `tasks.py`:
 
+#### Using OpenAI
+
 ```python
 # tasks.py
 from celery import Celery
@@ -176,6 +222,33 @@ def long_running_ai_analysis(prompt: str) -> str:
     print("Worker finished analysis.")
     return analysis
 ```
+
+#### Using Ollama
+
+```python
+# tasks.py
+from celery import Celery
+import ollama
+import os
+
+app = Celery('ai_tasks', broker='redis://localhost:6379/0', backend='redis://localhost:6379/0')
+OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'llama2')
+
+@app.task
+def long_running_ai_analysis(prompt: str, model: str = None) -> str:
+    """An AI task that can be run in the background by a Celery worker."""
+    model = model or OLLAMA_MODEL
+    print(f"Worker starting analysis for prompt: '{prompt[:30]}...'")
+    response = ollama.chat(
+        model=model,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    analysis = response['message']['content']
+    print("Worker finished analysis.")
+    return analysis
+```
+
+**Note**: With Ollama, background workers can help distribute the computational load across multiple machines, especially useful when running larger models that require significant CPU/GPU resources.
 Next, our FastAPI application submits jobs to this queue instead of running them directly.
 
 ```python

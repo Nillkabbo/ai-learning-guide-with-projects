@@ -23,6 +23,8 @@ The most common mistake in prompt engineering is vagueness. Let's see the differ
 
 A vague prompt lacks detail and context, forcing the AI to guess what you want.
 
+#### Using OpenAI
+
 ```python
 import openai
 
@@ -40,9 +42,28 @@ response = client.chat.completions.create(
 print(response.choices[0].message.content)
 ```
 
+#### Using Ollama
+
+```python
+import ollama
+
+# A bad prompt: vague, unclear, and without direction.
+bad_prompt = "Tell me about our IoT device."
+
+response = ollama.chat(
+    model="llama2",
+    messages=[{"role": "user", "content": bad_prompt}]
+)
+
+# The result will be a generic, unhelpful summary.
+print(response["message"]["content"])
+```
+
 ### The Good Prompt
 
 An effective prompt is specific, providing the AI with all the necessary ingredients to produce a high-quality response.
+
+#### Using OpenAI
 
 ```python
 # A good prompt: specific, contextual, and structured.
@@ -68,6 +89,51 @@ response = client.chat.completions.create(
 print(response.choices[0].message.content)
 ```
 
+#### Using Ollama
+
+```python
+import ollama
+import json
+
+# A good prompt: specific, contextual, and structured.
+good_prompt = """
+Analyze the following IoT device log and classify its status.
+
+**Device Log:**
+"2024-07-10 14:32:15 - TEMP-007 - Battery: 12% - Signal: Weak - Status: Active"
+
+**Instructions:**
+1.  **Task:** Classify the device's overall health as 'Healthy', 'Warning', or 'Critical'.
+2.  **Format:** Respond with a JSON object containing 'device_id', 'health_status', and 'reason'.
+3.  **Context:** A battery level below 20% is a 'Warning'. A 'Weak' signal is also a 'Warning'.
+4.  **Important:** Respond ONLY with valid JSON, no additional text.
+"""
+
+response = ollama.chat(
+    model="llama2",  # or llama3.2 for better JSON support
+    messages=[{"role": "user", "content": good_prompt}],
+    options={"temperature": 0.1}  # Lower temperature for more structured output
+)
+
+# Extract and parse JSON response
+result = response["message"]["content"]
+# Ollama may return JSON wrapped in text, so we extract it
+try:
+    json_result = json.loads(result)
+    print(json.dumps(json_result, indent=2))
+except json.JSONDecodeError:
+    # If not pure JSON, try to extract JSON from the response
+    import re
+    json_match = re.search(r'\{[^}]+\}', result)
+    if json_match:
+        json_result = json.loads(json_match.group())
+        print(json.dumps(json_result, indent=2))
+    else:
+        print(result)
+```
+
+**Note**: For structured JSON output with Ollama, use models like `llama3.2` or `mistral` which have better JSON compliance. You may need to parse the response more carefully than with OpenAI's `response_format` parameter.
+
 ### The Five Elements of an Effective Prompt
 
 Every great prompt should contain some or all of these five elements:
@@ -81,6 +147,8 @@ Every great prompt should contain some or all of these five elements:
 ## Pattern 1: Zero-Shot Prompting (Just Ask)
 
 **Zero-shot prompting** is the simplest form: you ask the AI to perform a task without giving it any prior examples. This works surprisingly well for general knowledge and common tasks that the model has seen many times in its training data.
+
+#### Using OpenAI
 
 ```python
 def zero_shot_analysis(log_entry: str) -> str:
@@ -104,11 +172,39 @@ log = "2024-07-10 15:00:05 - PUMP-03 - Pressure reading of 250 PSI exceeds maxim
 print(zero_shot_analysis(log))
 ```
 
-**When to use it:** For simple, well-defined tasks where the AI likely has extensive training data (e.g., summarization, simple classification, general questions).
+#### Using Ollama
+
+```python
+import ollama
+
+def zero_shot_analysis(log_entry: str, model: str = "llama2") -> str:
+    """Analyzes a log entry using a simple zero-shot prompt."""
+    
+    prompt = f"""
+Analyze this IoT log entry and provide a one-sentence summary of the key issue.
+
+Log Entry: "{log_entry}"
+
+Summary:
+"""
+    
+    response = ollama.chat(
+        model=model,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return response["message"]["content"].strip()
+
+log = "2024-07-10 15:00:05 - PUMP-03 - Pressure reading of 250 PSI exceeds maximum threshold of 200 PSI."
+print(zero_shot_analysis(log))
+```
+
+**When to use it:** For simple, well-defined tasks where the AI likely has extensive training data (e.g., summarization, simple classification, general questions). Works identically with both OpenAI and Ollama.
 
 ## Pattern 2: Few-Shot Prompting (Show, Don't Just Tell)
 
 **Few-shot prompting** is one of the most effective techniques for improving the accuracy and consistency of AI responses. Instead of just describing what you want, you provide a few examples of inputs and their corresponding desired outputs. This teaches the AI the exact pattern and format you expect.
+
+#### Using OpenAI
 
 ```python
 def few_shot_classifier(alert_text: str) -> str:
@@ -151,11 +247,58 @@ print(f"Classification: {few_shot_classifier('Sensor HUMID-07 reporting negative
 print(f"Classification: {few_shot_classifier('Device LIGHT-10 lost connection to WiFi network.')}")
 ```
 
-**When to use it:** When you need a specific output format, when the task is novel, or when you need to improve the consistency and reliability of the output.
+#### Using Ollama
+
+```python
+import ollama
+
+def few_shot_classifier(alert_text: str, model: str = "llama2") -> str:
+    """Classifies IoT alerts into predefined categories using examples."""
+    
+    prompt = f"""
+Classify the following IoT alert into one of these categories: [Connectivity, Power, Sensor_Failure, Security].
+
+---
+Example 1:
+Alert: "Device TEMP-01 failed to check in."
+Category: Connectivity
+
+Example 2:
+Alert: "Device DOOR-05 battery level at 4%."
+Category: Power
+
+Example 3:
+Alert: "Device CAM-02 reported anomalous reading outside of normal range."
+Category: Sensor_Failure
+
+Example 4:
+Alert: "Multiple failed login attempts detected for GATEWAY-01."
+Category: Security
+---
+
+Now, classify this alert:
+Alert: "{alert_text}"
+Category:
+"""
+
+    response = ollama.chat(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        options={"temperature": 0.0}  # Use low temperature for classification tasks
+    )
+    return response["message"]["content"].strip()
+
+print(f"Classification: {few_shot_classifier('Sensor HUMID-07 reporting negative humidity values.')}")
+print(f"Classification: {few_shot_classifier('Device LIGHT-10 lost connection to WiFi network.')}")
+```
+
+**When to use it:** When you need a specific output format, when the task is novel, or when you need to improve the consistency and reliability of the output. Few-shot prompting works excellently with both OpenAI and Ollama, as it relies on pattern recognition which both handle well.
 
 ## Pattern 3: Chain-of-Thought (CoT) Prompting
 
 LLMs often make mistakes in complex reasoning because they try to generate the answer in one step. **Chain-of-thought prompting** is a simple but powerful technique that forces the model to "think out loud" by breaking the problem down into intermediate steps. Simply adding the phrase "Let's think step by step" can dramatically improve performance on logic puzzles, math problems, and multi-step reasoning tasks.
+
+#### Using OpenAI
 
 ```python
 def chain_of_thought_diagnosis(symptoms: str) -> str:
@@ -178,6 +321,33 @@ Let's think step by step to diagnose the root cause.
         temperature=0.3
     )
     return response.choices[0].message.content
+```
+
+#### Using Ollama
+
+```python
+import ollama
+
+def chain_of_thought_diagnosis(symptoms: str, model: str = "llama2") -> str:
+    """Diagnoses a complex IoT issue using chain-of-thought reasoning."""
+    
+    prompt = f"""
+An IoT device is exhibiting the following symptoms:
+{symptoms}
+
+Let's think step by step to diagnose the root cause.
+1. First, analyze each symptom individually.
+2. Then, look for connections or correlations between the symptoms.
+3. Based on the connections, formulate the most likely hypotheses for the root cause.
+4. Finally, suggest a diagnostic action to confirm the most likely hypothesis.
+"""
+    
+    response = ollama.chat(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        options={"temperature": 0.3}
+    )
+    return response["message"]["content"]
 
 symptom_list = """
 - Temperature readings are fluctuating wildly.
@@ -192,6 +362,8 @@ By forcing the model to articulate its reasoning process, it's more likely to fo
 ## Pattern 4: Role-Based Prompting (The Persona Pattern)
 
 Instructing the AI to adopt a specific **role** or **persona** is a highly effective way to tailor its response style, tone, and content. When you tell the AI to "act as an expert cybersecurity analyst," you are priming it to access the patterns and vocabulary associated with that role from its training data.
+
+#### Using OpenAI
 
 ```python
 def get_expert_analysis(problem_description: str, expert_role: str) -> str:
@@ -226,14 +398,54 @@ for role in roles_to_consult:
     print("\n")
 ```
 
-This technique is incredibly powerful for tackling a problem from multiple angles, revealing insights that a single, generic prompt might miss.
+#### Using Ollama
+
+```python
+import ollama
+
+def get_expert_analysis(problem_description: str, expert_role: str, model: str = "llama2") -> str:
+    """Gets an analysis of a problem from a specific expert's perspective."""
+    
+    prompt = f"""
+You are a world-class {expert_role}.
+Analyze the following situation from your specific professional viewpoint.
+
+Situation: A fleet of 500 IoT delivery drones is experiencing a 15% failure rate in their GPS modules.
+
+Provide your expert analysis, focusing on the key issues, risks, and recommended actions relevant to your role.
+"""
+    
+    response = ollama.chat(
+        model=model,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return response["message"]["content"]
+
+# Get analyses from multiple different experts on the same problem
+roles_to_consult = [
+    "Hardware Engineer specializing in GPS modules",
+    "Network Engineer focused on data transmission",
+    "Logistics and Operations Manager",
+    "Cybersecurity Analyst concerned with signal spoofing"
+]
+
+for role in roles_to_consult:
+    print(f"--- Analysis from a {role} ---")
+    print(get_expert_analysis("Drone GPS failures", role))
+    print("\n")
+```
+
+This technique is incredibly powerful for tackling a problem from multiple angles, revealing insights that a single, generic prompt might miss. Role-based prompting works excellently with both OpenAI and Ollama, as both models respond well to persona instructions.
 
 ## A/B Testing Prompts for Optimal Performance
 
 Your first prompt is rarely your best one. Production-grade AI applications require testing and iteration. A/B testing—or more accurately, A/B/C/n testing—is the process of comparing multiple prompt variants against a set of test cases to see which one performs best.
 
+#### Using OpenAI
+
 ```python
 import time
+import openai
 
 class PromptTester:
     def __init__(self):
@@ -282,14 +494,74 @@ for variant, result in test_results.items():
     print(f"--- {variant} ---")
     print(result)
 ```
-By running several test cases through this framework, you can quantitatively and qualitatively determine which prompt structure yields the most reliable results for your application.
+
+#### Using Ollama
+
+```python
+import time
+import ollama
+
+class PromptTester:
+    def __init__(self, model: str = "llama2"):
+        self.model = model
+
+    def test_prompt_variants(self, test_input: str, prompt_variants: list[str]) -> dict:
+        """Tests multiple prompt variants for a single input."""
+        results = {}
+        for i, prompt_template in enumerate(prompt_variants):
+            variant_name = f"Variant-{i+1}"
+            
+            # Fill the template with the test input
+            full_prompt = prompt_template.format(input=test_input)
+            
+            response = ollama.chat(
+                model=self.model,
+                messages=[{"role": "user", "content": full_prompt}]
+            )
+            
+            results[variant_name] = response["message"]["content"]
+            time.sleep(1) # Simple rate limiting for the test
+        return results
+
+# Let's test different ways to ask for a JSON summary of an alert.
+alert_text = "Device PUMP-01 reports pressure at 300 PSI. The safe limit is 250 PSI."
+
+variants = [
+    # Variant 1: Simple and direct
+    "Summarize this alert in JSON: {input}",
+    
+    # Variant 2: More specific about keys
+    "Extract the device_id, metric, value, and limit from this alert into a JSON object: {input}",
+    
+    # Variant 3: Few-shot example
+    """
+Convert the alert into a structured JSON object.
+Example: 'Device TEMP-01 at 50C' -> {{"device_id": "TEMP-01", "metric": "temperature", "value": 50}}
+Alert to convert: {input}
+"""
+]
+
+tester = PromptTester(model="llama2")  # or llama3.2 for better JSON support
+test_results = tester.test_prompt_variants(alert_text, variants)
+
+for variant, result in test_results.items():
+    print(f"--- {variant} ---")
+    print(result)
+```
+
+By running several test cases through this framework, you can quantitatively and qualitatively determine which prompt structure yields the most reliable results for your application. A/B testing works identically with both OpenAI and Ollama, allowing you to optimize prompts regardless of your provider choice.
 
 ## Putting It All Together: A Smart IoT Diagnostic System
 
 Let's build a complete diagnostic system that uses all the patterns we've learned to provide a comprehensive analysis of an IoT device alert.
 
+#### Using OpenAI
+
 ```python
 from typing import Dict
+from datetime import datetime
+import json
+import openai
 
 class IoTDiagnosticSystem:
     def __init__(self):
@@ -363,7 +635,93 @@ full_report = system.generate_report(test_alert, test_context)
 print(json.dumps(full_report, indent=2))
 ```
 
-This final example demonstrates how these fundamental prompting patterns are not used in isolation but are combined to build a sophisticated, multi-faceted analysis workflow.
+#### Using Ollama
+
+```python
+from typing import Dict
+from datetime import datetime
+import json
+import ollama
+
+class IoTDiagnosticSystem:
+    def __init__(self, model: str = "llama2"):
+        self.model = model
+
+    def generate_report(self, alert_log: str, device_context: Dict) -> Dict:
+        """Generates a complete diagnostic report for an IoT alert."""
+        
+        # 1. Classify the alert using a Few-Shot Prompt
+        classification_prompt = f"""
+Classify this alert log into one of [Power, Connectivity, Sensor_Failure, Software_Bug].
+Example 1: "Battery at 3%" -> Power
+Example 2: "Failed to connect to WiFi" -> Connectivity
+Log: "{alert_log}"
+Category:
+"""
+        category_response = ollama.chat(
+            model=self.model,
+            messages=[{"role": "user", "content": classification_prompt}],
+            options={"temperature": 0}
+        )
+        category = category_response["message"]["content"].strip()
+
+        # 2. Get a detailed diagnosis using Chain-of-Thought
+        diagnosis_prompt = f"""
+An IoT device reported the following alert: "{alert_log}".
+Device context: {device_context}
+
+Let's diagnose this step by step:
+1.  What is the immediate problem indicated by the alert?
+2.  Considering the device context, what are the 2-3 most likely root causes?
+3.  What is the recommended first action to take to verify the cause?
+"""
+        diagnosis_response = ollama.chat(
+            model=self.model,
+            messages=[{"role": "user", "content": diagnosis_prompt}],
+            options={"temperature": 0.3}
+        )
+        diagnosis = diagnosis_response["message"]["content"]
+
+        # 3. Get a specialized opinion using Role-Based Prompting
+        security_prompt = f"""
+You are a cybersecurity expert. Analyze this IoT alert for potential security implications:
+Alert: "{alert_log}"
+Context: {device_context}
+"""
+        security_response = ollama.chat(
+            model=self.model,
+            messages=[{"role": "user", "content": security_prompt}],
+            options={"temperature": 0.2}
+        )
+        security_analysis = security_response["message"]["content"]
+
+        # 4. Assemble the final report
+        report = {
+            "alert": alert_log,
+            "category": category,
+            "diagnosis_reasoning": diagnosis,
+            "security_assessment": security_analysis,
+            "report_generated_at": datetime.now().isoformat()
+        }
+        return report
+
+# --- Demo of the complete system ---
+system = IoTDiagnosticSystem(model="llama2")  # or llama3.2 for better reasoning
+
+test_alert = "Device MOTION-07 is spamming the server with thousands of 'motion detected' events per second."
+test_context = {
+    "device_type": "PIR Motion Sensor",
+    "firmware_version": "v1.2.1",
+    "last_firmware_update": "2024-06-01",
+    "location": "Main entrance"
+}
+
+full_report = system.generate_report(test_alert, test_context)
+
+print(json.dumps(full_report, indent=2))
+```
+
+This final example demonstrates how these fundamental prompting patterns are not used in isolation but are combined to build a sophisticated, multi-faceted analysis workflow. The same patterns work seamlessly with both OpenAI and Ollama, allowing you to build production-ready diagnostic systems regardless of your AI provider choice.
 
 ## Conclusion
 

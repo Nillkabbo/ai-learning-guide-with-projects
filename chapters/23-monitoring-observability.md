@@ -38,6 +38,8 @@ First, install `structlog`: `pip install structlog`.
 
 Let's create a centralized function for making AI calls that automatically logs all the important details.
 
+#### Using OpenAI
+
 ```python
 # structured_logging_example.py
 import openai
@@ -123,6 +125,102 @@ try:
 except Exception:
     pass
 ```
+
+#### Using Ollama
+
+```python
+# structured_logging_example.py
+import ollama
+import os
+from dotenv import load_dotenv
+import structlog
+import uuid
+from datetime import datetime
+
+# --- Configure structlog for JSON output ---
+structlog.configure(
+    processors=[
+        structlog.stdlib.add_log_level,
+        structlog.stdlib.add_logger_name,
+        structlog.processors.TimeStamper(fmt="iso"),
+        structlog.processors.JSONRenderer(),
+    ]
+)
+log = structlog.get_logger()
+
+# --- Set Model ---
+OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'llama2')
+
+def monitored_ai_call(prompt: str, user_id: str, model: str = None):
+    """Makes an AI call with comprehensive structured logging."""
+    
+    model = model or OLLAMA_MODEL
+    request_id = str(uuid.uuid4())
+    start_time = datetime.now()
+
+    log.info(
+        "ai_call_start",
+        request_id=request_id,
+        user_id=user_id,
+        model=model,
+        prompt_length=len(prompt)
+    )
+
+    try:
+        response = ollama.chat(
+            model=model,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        latency_ms = (datetime.now() - start_time).total_seconds() * 1000
+        ai_response_text = response['message']['content']
+        
+        # Note: Ollama doesn't provide token usage in the response by default
+        # You may need to estimate or use a tokenizer library to count tokens
+        # For this example, we'll use approximate token counts
+        estimated_input_tokens = len(prompt.split()) * 1.3  # Rough estimate
+        estimated_output_tokens = len(ai_response_text.split()) * 1.3
+        estimated_total_tokens = estimated_input_tokens + estimated_output_tokens
+
+        log.info(
+            "ai_call_success",
+            request_id=request_id,
+            user_id=user_id,
+            model=model,
+            latency_ms=round(latency_ms, 2),
+            input_tokens=int(estimated_input_tokens),
+            output_tokens=int(estimated_output_tokens),
+            total_tokens=int(estimated_total_tokens),
+            # In production, you might log a hash of the prompt/response for privacy
+            prompt=prompt,
+            response=ai_response_text
+        )
+        return ai_response_text
+        
+    except Exception as e:
+        latency_ms = (datetime.now() - start_time).total_seconds() * 1000
+        log.error(
+            "ai_call_failure",
+            request_id=request_id,
+            user_id=user_id,
+            model=model,
+            latency_ms=round(latency_ms, 2),
+            error_message=str(e),
+            error_type=type(e).__name__
+        )
+        raise
+
+# --- Example Usage ---
+try:
+    monitored_ai_call(
+        prompt="Explain the difference between MQTT and HTTP for IoT data.",
+        user_id="user-123"
+    )
+except Exception:
+    pass
+```
+
+**Note**: Ollama doesn't provide token usage information in its response by default. For accurate token counting, you may want to use a tokenizer library (like `tiktoken` for compatible models or model-specific tokenizers) or estimate based on word count. For cost tracking with Ollama, you'll typically focus on latency and resource usage metrics instead of token-based costs.
 
 Running this code produces beautifully structured JSON logs that can be easily ingested and analyzed:
 

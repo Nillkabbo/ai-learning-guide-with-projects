@@ -23,6 +23,8 @@ The core idea behind domain-specific prompting is to provide the AI with the ric
 
 A generic prompt asks a general question and receives a general answer.
 
+#### Using OpenAI
+
 ```python
 import openai
 
@@ -38,11 +40,32 @@ def generic_analysis(data: str) -> str:
     return response.choices[0].message.content
 ```
 
+#### Using Ollama
+
+```python
+import ollama
+
+def generic_analysis(data: str, model: str = "llama2") -> str:
+    """A generic prompt that lacks specific domain context."""
+    prompt = f"Analyze this data and provide insights: {data}"
+    response = ollama.chat(
+        model=model,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return response["message"]["content"]
+```
+
 ### A Domain-Specific Analysis
 
 A domain-specific prompt imbues the AI with a persona and asks it to consider factors relevant to that domain.
 
+#### Using OpenAI
+
 ```python
+import openai
+
+client = openai.OpenAI()
+
 def domain_specific_analysis(data: str, domain: str) -> str:
     """A prompt that provides the AI with a specific expert role and context."""
     
@@ -73,6 +96,41 @@ Provide your analysis, focusing specifically on:
     return response.choices[0].message.content
 ```
 
+#### Using Ollama
+
+```python
+import ollama
+
+def domain_specific_analysis(data: str, domain: str, model: str = "llama2") -> str:
+    """A prompt that provides the AI with a specific expert role and context."""
+    
+    # Define expert personas for different domains
+    domain_personas = {
+        "manufacturing": "You are a manufacturing process engineer with 15 years of experience in lean manufacturing and quality control.",
+        "healthcare": "You are a biomedical data analyst specializing in patient monitoring device data and regulatory compliance."
+    }
+    persona = domain_personas.get(domain, "You are a technical expert.")
+    
+    prompt = f"""
+As {persona}, analyze the following operational data.
+
+Data:
+{data}
+
+Provide your analysis, focusing specifically on:
+- Industry-specific Key Performance Indicators (KPIs).
+- Potential safety and regulatory implications.
+- Opportunities for operational efficiency improvements relevant to the {domain} sector.
+- Actionable insights tailored to a {domain} context.
+"""
+    response = ollama.chat(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        options={"temperature": 0.2}
+    )
+    return response["message"]["content"]
+```
+
 Let's compare the outputs using some sample factory data.
 
 ```python
@@ -101,6 +159,8 @@ AI is a powerful tool for generating documentation, but to create truly useful d
 ### Generating API Documentation
 
 Let's generate developer-focused documentation for an IoT API.
+
+#### Using OpenAI
 
 ```python
 import json
@@ -133,6 +193,40 @@ Generate a complete API reference document in Markdown format for the following 
         temperature=0.1
     )
     return response.choices[0].message.content
+```
+
+#### Using Ollama
+
+```python
+import json
+import ollama
+
+def generate_api_documentation(api_spec: dict, model: str = "llama2") -> str:
+    """Generates comprehensive API documentation from a specification."""
+    
+    prompt = f"""
+You are a senior technical writer specializing in creating clear, developer-friendly API documentation.
+
+Generate a complete API reference document in Markdown format for the following API specification.
+
+**API Specification:**
+
+{json.dumps(api_spec, indent=2)}
+
+
+**Documentation Requirements:**
+1. **Overview:** Explain the API's purpose, base URL, version, and authentication method.
+2. **Endpoints:** For each endpoint, detail the HTTP method, path, description, parameters, request body (if any), and example responses for both success (200 OK) and common errors (e.g., 404 Not Found, 401 Unauthorized).
+3. **Code Examples:** Provide practical code examples for each endpoint in Python (using the `requests` library) and a `cURL` command.
+"""
+    
+    response = ollama.chat(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        options={"temperature": 0.1}
+    )
+    return response["message"]["content"]
+```
 
 # Define a simple specification for our IoT API
 iot_api_specification = {
@@ -169,7 +263,14 @@ As we've seen, AI can write code. But to write *good* code, it needs to understa
 
 Let's generate a Python class for an MQTT client, a common component in IoT systems, and enforce IoT-specific best practices.
 
+#### Using OpenAI
+
 ```python
+import json
+import openai
+
+client = openai.OpenAI()
+
 def generate_iot_code(requirements: dict) -> str:
     """Generates code that follows specific IoT domain patterns."""
     
@@ -212,13 +313,69 @@ print("--- Generated IoT MQTT Client Code ---")
 print(generated_code)
 ```
 
-By explicitly listing the required engineering patterns, you guide the AI to produce code that is not just functional but also robust and maintainable in a real-world IoT environment.
+#### Using Ollama
+
+```python
+import json
+import ollama
+
+def generate_iot_code(requirements: dict, model: str = "llama3.2") -> str:
+    """Generates code that follows specific IoT domain patterns."""
+    
+    # Define best practices for this domain
+    iot_patterns = [
+        "Implement automatic reconnection logic with exponential backoff.",
+        "Handle potential network errors and connection losses gracefully.",
+        "Use comprehensive logging for easy debugging in the field.",
+        "Ensure all network operations are asynchronous (`async`/`await`).",
+        "Include methods for clean connection teardown."
+    ]
+    
+    prompt = f"""
+You are an expert embedded systems developer specializing in IoT communication protocols.
+Generate a production-ready Python class for an MQTT client based on these requirements.
+
+**Requirements:**
+{json.dumps(requirements, indent=2)}
+
+**Mandatory Implementation Patterns:**
+- {chr(10).join(f"- {p}" for p in iot_patterns)}
+"""
+    
+    response = ollama.chat(
+        model=model,  # Use llama3.2 or codellama for better code generation
+        messages=[{"role": "user", "content": prompt}],
+        options={"temperature": 0.1}
+    )
+    return response["message"]["content"]
+
+mqtt_client_requirements = {
+    "purpose": "Collects sensor data from topics and forwards it to a cloud API.",
+    "broker_address": "mqtt.industrial-iot.com",
+    "topics_to_subscribe": ["factory/+/temperature", "factory/+/pressure"],
+    "authentication": "Username/Password"
+}
+
+generated_code = generate_iot_code(mqtt_client_requirements)
+print("--- Generated IoT MQTT Client Code ---")
+print(generated_code)
+```
+
+**Note**: For code generation with Ollama, consider using specialized code models like `codellama` or `deepseek-coder` for better results.
+
+By explicitly listing the required engineering patterns, you guide the AI to produce code that is not just functional but also robust and maintainable in a real-world IoT environment. This approach works identically with both OpenAI and Ollama.
 
 ### Performing a Domain-Specific Code Review
 
 We can also use AI to review code, asking it to look for problems specific to a domain.
 
+#### Using OpenAI
+
 ```python
+import openai
+
+client = openai.OpenAI()
+
 def review_iot_code(code_snippet: str) -> str:
     """Performs a code review with a focus on IoT-specific issues."""
     
@@ -251,6 +408,46 @@ Provide your review in a structured format with sections for 'Strengths', 'Criti
         temperature=0.2
     )
     return response.choices[0].message.content
+```
+
+#### Using Ollama
+
+```python
+import ollama
+
+def review_iot_code(code_snippet: str, model: str = "llama2") -> str:
+    """Performs a code review with a focus on IoT-specific issues."""
+    
+    iot_review_criteria = [
+        "Correct handling of device disconnections and reconnections.",
+        "Efficient use of network bandwidth and power, especially for battery-powered devices.",
+        "Security of the communication channel (e.g., use of TLS).",
+        "Robust error handling for intermittent connectivity.",
+        "Scalability to handle hundreds or thousands of devices."
+    ]
+    
+    prompt = f"""
+You are a senior IoT architect performing a code review.
+Analyze the following Python code for an IoT application.
+
+**Code to Review:**
+{code_snippet}
+
+
+**Review Focus:**
+Evaluate the code against these IoT-specific best practices:
+- {chr(10).join(f"- {c}" for c in iot_review_criteria)}
+
+Provide your review in a structured format with sections for 'Strengths', 'Critical Issues', and 'Suggestions for Improvement'.
+"""
+    
+    response = ollama.chat(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        options={"temperature": 0.2}
+    )
+    return response["message"]["content"]
+```
 
 # A simple (and flawed) code snippet to be reviewed
 sample_code = """
@@ -284,7 +481,14 @@ When analyzing data, providing domain context transforms the AI from a simple da
 Let's analyze production data from the perspective of a quality control engineer.
 
 
+#### Using OpenAI
+
 ```python
+import json
+import openai
+
+client = openai.OpenAI()
+
 def analyze_manufacturing_data(data: dict) -> str:
     """Analyzes production data with a manufacturing expert persona."""
     
@@ -322,13 +526,60 @@ print("--- Manufacturing Data Analysis ---")
 print(manufacturing_analysis)
 ```
 
-By framing the request this way, the AI will use domain-specific concepts like OEE and provide recommendations that are relevant to a factory floor manager, rather than just stating that the numbers are low.
+#### Using Ollama
+
+```python
+import json
+import ollama
+
+def analyze_manufacturing_data(data: dict, model: str = "llama2") -> str:
+    """Analyzes production data with a manufacturing expert persona."""
+    
+    prompt = f"""
+You are a Quality Control Engineer in a manufacturing plant. Analyze the following production report.
+
+**Production Data:**
+{json.dumps(data, indent=2)}
+
+Provide your analysis focusing on:
+- **Overall Equipment Effectiveness (OEE):** Calculate or estimate the OEE score.
+- **Root Cause Analysis:** What is the most likely cause of the increased defect rate?
+- **Actionable Insights:** What specific, practical steps should be taken to improve quality and throughput?
+- **Process Control:** Are the processes in a state of statistical control?
+"""
+    
+    response = ollama.chat(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        options={"temperature": 0.3}
+    )
+    return response["message"]["content"]
+
+production_data = {
+    "shift_duration_hours": 8,
+    "planned_downtime_minutes": 30,
+    "unplanned_downtime_minutes": 45,
+    "ideal_cycle_time_seconds": 60,
+    "total_units_produced": 400,
+    "defective_units": 20
+}
+
+manufacturing_analysis = analyze_manufacturing_data(production_data)
+print("--- Manufacturing Data Analysis ---")
+print(manufacturing_analysis)
+```
+
+By framing the request this way, the AI will use domain-specific concepts like OEE and provide recommendations that are relevant to a factory floor manager, rather than just stating that the numbers are low. This approach works identically with both OpenAI and Ollama.
 
 ## A Practical Project: Domain-Specific IoT Troubleshooting
 
 Let's build a troubleshooting assistant that leverages deep domain knowledge about different types of IoT devices to provide expert-level guidance.
 
+#### Using OpenAI
+
 ```python
+import openai
+
 class IoTTroubleshootingSystem:
     def __init__(self):
         self.client = openai.OpenAI()
@@ -388,7 +639,71 @@ print("--- Generated Troubleshooting Guide ---")
 print(guide)
 ```
 
-This final example shows how embedding a structured knowledge base directly into the prompt allows the AI to generate highly relevant, expert-level content that is far more useful than a generic response.
+#### Using Ollama
+
+```python
+import ollama
+
+class IoTTroubleshootingSystem:
+    def __init__(self, model: str = "llama2"):
+        self.model = model
+        # This knowledge base could be loaded from a database or configuration file
+        self.device_knowledge = {
+            "pressure_transmitter": {
+                "common_issues": ["Clogged impulse lines", "Diaphragm failure", "Calibration drift due to temperature changes"],
+                "diagnostic_tools": ["Pressure calibrator", "Manometer", "Multimeter"],
+                "safety_note": "Always isolate the device from process pressure before disconnecting."
+            },
+            "vibration_sensor": {
+                "common_issues": ["Improper mounting", "Electromagnetic interference from motors", "Sensor overload"],
+                "diagnostic_tools": ["Vibration analyzer", "Oscilloscope", "Torque wrench"],
+                "safety_note": "Be aware of rotating machinery when approaching the sensor."
+            }
+        }
+
+    def generate_troubleshooting_guide(self, device_type: str, issue_description: str) -> str:
+        """Generates a detailed, domain-specific troubleshooting guide."""
+        
+        # Retrieve domain knowledge for the specific device type
+        knowledge = self.device_knowledge.get(device_type, {})
+        
+        prompt = f"""
+You are an expert field service technician creating a troubleshooting guide.
+
+**Device Type:** {device_type}
+**Reported Issue:** {issue_description}
+
+**Your Knowledge Base for this Device Type:**
+- Common Issues: {knowledge.get('common_issues', 'N/A')}
+- Required Tools: {knowledge.get('diagnostic_tools', 'N/A')}
+- Critical Safety Note: {knowledge.get('safety_note', 'Follow standard safety procedures.')}
+
+Create a systematic, step-by-step troubleshooting guide. Structure it with the following sections:
+1. **Initial Assessment & Safety:** What to check first and what safety precautions to take.
+2. **Hypothesis 1 (Most Likely Cause):** State the most probable cause based on the issue and your knowledge.
+3. **Verification Steps for Hypothesis 1:** List the specific actions to confirm or deny this cause.
+4. **Hypothesis 2 (Next Likely Cause):** State the second most probable cause.
+5. **Verification Steps for Hypothesis 2:** List the actions to test this hypothesis.
+6. **Escalation Path:** When to stop and call for a specialist engineer.
+"""
+        
+        response = ollama.chat(
+            model=self.model,
+            messages=[{"role": "user", "content": prompt}],
+            options={"temperature": 0.2}
+        )
+        return response["message"]["content"]
+
+# --- Demo of the troubleshooting system ---
+troubleshooter = IoTTroubleshootingSystem(model="llama2")
+reported_problem = "The pressure transmitter is showing erratic readings that jump up and down, but the system pressure seems stable."
+
+guide = troubleshooter.generate_troubleshooting_guide("pressure_transmitter", reported_problem)
+print("--- Generated Troubleshooting Guide ---")
+print(guide)
+```
+
+This final example shows how embedding a structured knowledge base directly into the prompt allows the AI to generate highly relevant, expert-level content that is far more useful than a generic response. The same patterns work identically with both OpenAI and Ollama, allowing you to build domain-specific AI systems locally without API costs.
 
 ## Conclusion
 

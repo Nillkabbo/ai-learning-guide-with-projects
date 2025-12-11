@@ -41,6 +41,8 @@ For a new project or a small team, a monolith is often the right choice. All you
 
 Here's what a simple AI monolith using FastAPI might look like:
 
+#### Using OpenAI
+
 ```python
 # A simple, monolithic AI application using FastAPI.
 # All logic (API, AI call, caching, database) is in one file.
@@ -98,16 +100,98 @@ async def analyze_text(request: AnalysisRequest):
     # 3. Database Logic (Simplified)
     # In a real app, you would save the analysis to a database here.
     print("Saving to database...")
-
-    # Update cache
-    redis_client.setex(cache_key, 3600, ai_analysis) # Cache for 1 hour
-
+    
+    # 4. Cache the result
+    redis_client.setex(cache_key, 3600, ai_analysis)  # Cache for 1 hour
+    
     return AnalysisResponse(
         original_text=request.text,
         analysis=ai_analysis,
         cached=False
     )
 ```
+
+#### Using Ollama
+
+```python
+# A simple, monolithic AI application using FastAPI.
+# All logic (API, AI call, caching, database) is in one file.
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+import ollama
+import redis
+import json
+import os
+from datetime import datetime
+
+# --- All components initialized in one place ---
+app = FastAPI(title="AI Monolith")
+OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'llama2')
+redis_client = redis.Redis(host='localhost', port=6379, decode_responses=True)
+
+# --- Request/Response Models ---
+class AnalysisRequest(BaseModel):
+    text: str
+    model: str = None  # Optional model override
+
+class AnalysisResponse(BaseModel):
+    original_text: str
+    analysis: str
+    cached: bool
+    model: str
+
+# --- API Endpoint ---
+@app.post("/analyze", response_model=AnalysisResponse)
+async def analyze_text(request: AnalysisRequest):
+    """Analyzes a piece of text using AI, with caching."""
+    
+    model = request.model or OLLAMA_MODEL
+    
+    # 1. Caching Logic (include model in cache key)
+    cache_key = f"analysis:{model}:{request.text}"
+    cached_result = redis_client.get(cache_key)
+    if cached_result:
+        print("Cache Hit!")
+        return AnalysisResponse(
+            original_text=request.text,
+            analysis=cached_result,
+            cached=True,
+            model=model
+        )
+
+    print("Cache Miss. Calling AI...")
+    # 2. AI Logic
+    try:
+        response = ollama.chat(
+            model=model,
+            messages=[
+                {"role": "system", "content": "You are a concise analyst."},
+                {"role": "user", "content": f"Analyze this: {request.text}"}
+            ]
+        )
+        ai_analysis = response["message"]["content"]
+    except Exception as e:
+        raise HTTPException(
+            status_code=503, 
+            detail=f"AI service unavailable: {e}. Make sure Ollama is running and model '{model}' is installed."
+        )
+    
+    # 3. Database Logic (Simplified)
+    # In a real app, you would save the analysis to a database here.
+    print("Saving to database...")
+    
+    # 4. Cache the result
+    redis_client.setex(cache_key, 3600, ai_analysis)  # Cache for 1 hour
+    
+    return AnalysisResponse(
+        original_text=request.text,
+        analysis=ai_analysis,
+        cached=False,
+        model=model
+    )
+```
+
+**Note**: The architecture patterns are identical for both OpenAI and Ollama. The main difference is the AI client initialization and API calls. Ollama can provide lower latency for local deployments and eliminates API costs.
 This is perfectly fine for getting started, but as the application grows, its limitations become apparent. You can't scale the AI processing independently of the web server, and a failure in one component can bring down the entire system.
 
 ### Microservices: Scalability and Resilience

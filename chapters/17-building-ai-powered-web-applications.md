@@ -27,6 +27,8 @@ Flask is known for its minimalism, which makes it an excellent teaching tool. Ou
 
 First, let's set up the basic Flask application and route.
 
+#### Using OpenAI
+
 ```python
 from flask import Flask, request, jsonify
 import openai
@@ -40,22 +42,6 @@ client = openai.OpenAI()
 
 # 3. Define an endpoint using a route decorator
 @app.route('/ask', methods=['POST'])
-def ask_ai():
-    # ... implementation to come ...
-    return jsonify({"message": "Endpoint is working!"})
-
-# 4. A standard block to run the app when the script is executed
-if __name__ == '__main__':
-    app.run(debug=True, port=5000)
-```
-
-This skeleton sets up a web server. The `@app.route('/ask', methods=['POST'])` decorator tells Flask that whenever a `POST` request comes to the `/ask` URL, it should run the `ask_ai` function.
-
-Now, let's add the AI logic inside the function.
-
-```python
-# Continuing in the ask_ai function...
-
 def ask_ai():
     # 1. Get the JSON data from the incoming request
     data = request.get_json()
@@ -81,7 +67,65 @@ def ask_ai():
         'question': question,
         'answer': answer
     })
+
+# 4. A standard block to run the app when the script is executed
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)
 ```
+
+#### Using Ollama
+
+```python
+from flask import Flask, request, jsonify
+import ollama
+
+# 1. Create a Flask application instance
+app = Flask(__name__)
+
+# 2. Configure Ollama model (default can be overridden via environment variable)
+import os
+OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'llama2')
+
+# 3. Define an endpoint using a route decorator
+@app.route('/ask', methods=['POST'])
+def ask_ai():
+    # 1. Get the JSON data from the incoming request
+    data = request.get_json()
+    if not data or 'question' not in data:
+        # Return an error if the request is malformed
+        return jsonify({'error': 'JSON payload must include a "question" key.'}), 400
+
+    question = data['question']
+    
+    # Optional: Allow model override in request
+    model = data.get('model', OLLAMA_MODEL)
+
+    # 2. Call the Ollama API
+    try:
+        response = ollama.chat(
+            model=model,
+            messages=[{"role": "user", "content": question}]
+        )
+        answer = response["message"]["content"]
+    except Exception as e:
+        # Handle potential API errors (e.g., Ollama not running, model not found)
+        return jsonify({'error': f'AI service error: {str(e)}'}), 503
+
+    # 3. Return the AI's answer in a JSON response
+    return jsonify({
+        'question': question,
+        'answer': answer,
+        'model': model
+    })
+
+# 4. A standard block to run the app when the script is executed
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)
+```
+
+**Note**: Make sure Ollama is running (`ollama serve`) and the model is pulled (`ollama pull llama2`) before starting the Flask server.
+
+This skeleton sets up a web server. The `@app.route('/ask', methods=['POST'])` decorator tells Flask that whenever a `POST` request comes to the `/ask` URL, it should run the `ask_ai` function.
 
 With the complete code in a file named `app.py`, you can run it:
 
@@ -142,9 +186,12 @@ These models enforce that every request to `/ai/ask` *must* have a `question` fi
 
 Now, we create the FastAPI application and endpoint. Notice how we use the Pydantic models as type hints in the function signature.
 
+#### Using OpenAI
+
 ```python
 from fastapi import FastAPI, HTTPException
 from datetime import datetime
+import openai
 
 # 1. Create a FastAPI application instance
 app = FastAPI(
@@ -152,6 +199,9 @@ app = FastAPI(
     description="A demonstration of a production-ready AI endpoint.",
     version="1.0.0"
 )
+
+# Initialize OpenAI client
+client = openai.OpenAI()
 
 # 2. Define the endpoint using the Pydantic models
 @app.post("/ai/ask", response_model=AIResponse)
@@ -166,6 +216,53 @@ async def ask_ai(request: AIRequest):
         
         answer = response.choices[0].message.content
         tokens = response.usage.total_tokens if response.usage else None
+        
+        return AIResponse(
+            question=request.question,
+            answer=answer,
+            tokens_used=tokens
+        )
+        
+    except Exception as e:
+        # FastAPI's HTTPException is the standard way to return error responses.
+        raise HTTPException(
+            status_code=503, 
+            detail=f"AI service error: {str(e)}"
+        )
+```
+
+#### Using Ollama
+
+```python
+from fastapi import FastAPI, HTTPException
+from datetime import datetime
+import ollama
+import os
+
+# 1. Create a FastAPI application instance
+app = FastAPI(
+    title="Simple AI API",
+    description="A demonstration of a production-ready AI endpoint.",
+    version="1.0.0"
+)
+
+# Configure default model
+OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'llama2')
+
+# 2. Define the endpoint using the Pydantic models
+@app.post("/ai/ask", response_model=AIResponse)
+async def ask_ai(request: AIRequest):
+    """Receives a question and returns an AI-generated answer."""
+    
+    try:
+        response = ollama.chat(
+            model=OLLAMA_MODEL,
+            messages=[{"role": "user", "content": request.question}]
+        )
+        
+        answer = response["message"]["content"]
+        # Ollama doesn't provide token usage in the same way, so we set it to None
+        tokens = None
         
         return AIResponse(
             question=request.question,
@@ -197,9 +294,14 @@ FastAPI makes this incredibly elegant with its `StreamingResponse` and support f
 
 First, we need a function that `yields` the AI's response in chunks. We do this by setting `stream=True` in the OpenAI API call.
 
+#### Using OpenAI
+
 ```python
 import asyncio
 from typing import AsyncGenerator
+import openai
+
+client = openai.OpenAI()
 
 async def generate_streaming_response(prompt: str) -> AsyncGenerator[str, None]:
     """Calls the OpenAI API in streaming mode and yields content chunks."""
@@ -221,7 +323,39 @@ async def generate_streaming_response(prompt: str) -> AsyncGenerator[str, None]:
         yield f"An error occurred: {str(e)}"
 ```
 
+#### Using Ollama
+
+```python
+import asyncio
+from typing import AsyncGenerator
+import ollama
+import os
+
+OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'llama2')
+
+async def generate_streaming_response(prompt: str) -> AsyncGenerator[str, None]:
+    """Calls the Ollama API in streaming mode and yields content chunks."""
+    try:
+        stream = ollama.chat(
+            model=OLLAMA_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            stream=True
+        )
+        
+        # Iterate over the stream of chunks
+        for chunk in stream:
+            content = chunk.get("message", {}).get("content", "")
+            if content:
+                yield content
+                await asyncio.sleep(0.01)  # Small delay to simulate network flow
+    except Exception as e:
+        print(f"Error during stream generation: {e}")
+        yield f"An error occurred: {str(e)}"
+```
+
 Now, we create an endpoint that returns a `StreamingResponse`, passing our generator function to it.
+
+#### Using OpenAI
 
 ```python
 from fastapi.responses import StreamingResponse
@@ -235,6 +369,23 @@ async def stream_ai_analysis(request: AIRequest):
         media_type="text/plain"
     )
 ```
+
+#### Using Ollama
+
+```python
+from fastapi.responses import StreamingResponse
+
+@app.post("/ai/stream")
+async def stream_ai_analysis(request: AIRequest):
+    """Streams a detailed AI analysis token-by-token."""
+    prompt = f"Provide a detailed, multi-paragraph analysis of the following topic: {request.question}"
+    return StreamingResponse(
+        generate_streaming_response(prompt), 
+        media_type="text/plain"
+    )
+```
+
+**Note**: Ollama's streaming API works similarly to OpenAI's. Both support streaming responses for real-time user experiences.
 
 A client (like a JavaScript frontend) can use the `fetch` API to read this stream and update the UI in real time, creating the familiar "typing" effect seen in tools like ChatGPT.
 
@@ -328,9 +479,14 @@ Modern AI is multimodal. It can understand images, audio, and documents. A produ
 
 FastAPI makes this easy with the `UploadFile` type. Let's create an endpoint that accepts an image and uses a vision model to analyze it.
 
+#### Using OpenAI
+
 ```python
-from fastapi import File, UploadFile
+from fastapi import File, UploadFile, HTTPException
 import base64
+import openai
+
+client = openai.OpenAI()
 
 @app.post("/analyze/image")
 async def analyze_image(file: UploadFile = File(...)):
@@ -365,6 +521,56 @@ async def analyze_image(file: UploadFile = File(...)):
         "analysis": response.choices[0].message.content
     }
 ```
+
+#### Using Ollama
+
+```python
+from fastapi import File, UploadFile, HTTPException
+import base64
+import ollama
+import os
+
+OLLAMA_MODEL = os.getenv('OLLAMA_VISION_MODEL', 'llava')  # Use vision-capable model
+
+@app.post("/analyze/image")
+async def analyze_image(file: UploadFile = File(...)):
+    """Accepts an image, sends it to a vision model for analysis."""
+    
+    # 1. Read the file content into memory
+    contents = await file.read()
+    
+    # 2. Validate file type and size (important for security)
+    if file.content_type not in ["image/jpeg", "image/png"]:
+        raise HTTPException(status_code=400, detail="Invalid image type.")
+    if len(contents) > 10 * 1024 * 1024: # 10 MB limit
+        raise HTTPException(status_code=413, detail="File size exceeds 10MB limit.")
+
+    # 3. Encode the image for the API call
+    base64_image = base64.b64encode(contents).decode('utf-8')
+    
+    # 4. Call the vision model (Ollama vision models use different API structure)
+    try:
+        response = ollama.chat(
+            model=OLLAMA_MODEL,
+            messages=[{
+                "role": "user",
+                "content": "Describe this image. If it contains industrial equipment, identify any visible issues.",
+                "images": [base64_image]  # Ollama uses 'images' array
+            }]
+        )
+        
+        return {
+            "filename": file.filename,
+            "analysis": response["message"]["content"]
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Vision model error: {str(e)}. Make sure you have a vision-capable model like 'llava' installed."
+        )
+```
+
+**Note**: For vision capabilities with Ollama, you need to install a vision-capable model like `llava` (`ollama pull llava`). Vision support varies by model, so check Ollama's documentation for available vision models.
 
 The same pattern applies to other file types. For audio, you might use OpenAI's Whisper model for transcription. For PDFs, you would use a library like `PyPDF2` to extract text before sending it to an LLM for summarization or analysis.
 
@@ -407,7 +613,21 @@ async def websocket_endpoint(websocket: WebSocket):
                 # AI-powered diagnostics
                 device_id = data.get("device_id")
                 # ... build prompt for the specific device ...
-                # ... call OpenAI API ...
+                
+                # Using OpenAI:
+                # response = client.chat.completions.create(
+                #     model="gpt-4o-mini",
+                #     messages=[{"role": "user", "content": prompt}]
+                # )
+                # diagnosis = response.choices[0].message.content
+                
+                # Using Ollama:
+                # response = ollama.chat(
+                #     model="llama3.2",
+                #     messages=[{"role": "user", "content": prompt}]
+                # )
+                # diagnosis = response["message"]["content"]
+                
                 diagnosis = "AI analysis result..."
                 
                 # Broadcast the new alert to all connected clients
@@ -418,8 +638,23 @@ async def websocket_endpoint(websocket: WebSocket):
 
             elif action == "chat":
                 # AI chat assistant logic
+                user_message = data.get("message")
                 # ... build context with current device states ...
-                # ... call OpenAI API with user's message ...
+                
+                # Using OpenAI:
+                # response = client.chat.completions.create(
+                #     model="gpt-4o-mini",
+                #     messages=[{"role": "user", "content": user_message}]
+                # )
+                # ai_response = response.choices[0].message.content
+                
+                # Using Ollama:
+                # response = ollama.chat(
+                #     model="llama3.2",
+                #     messages=[{"role": "user", "content": user_message}]
+                # )
+                # ai_response = response["message"]["content"]
+                
                 ai_response = "AI assistant response..."
                 
                 # Send the response back to the specific client who asked

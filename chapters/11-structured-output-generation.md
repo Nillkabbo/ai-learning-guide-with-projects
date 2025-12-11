@@ -18,6 +18,8 @@ By the end of this chapter, you will be able to:
 
 Let's start by highlighting the problem we're trying to solve. Imagine asking an AI to analyze a sensor reading.
 
+#### Using OpenAI
+
 ```python
 import openai
 
@@ -38,14 +40,41 @@ analysis = unstructured_analysis(sensor_reading)
 print("--- Unstructured Output ---")
 print(analysis)
 ```
+
+#### Using Ollama
+
+```python
+import ollama
+
+def unstructured_analysis(sensor_data: str, model: str = "llama2") -> str:
+    """A standard prompt that results in unstructured, hard-to-parse text."""
+    prompt = f"Analyze this IoT sensor data and tell me what's wrong and what to do: {sensor_data}"
+    
+    response = ollama.chat(
+        model=model,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return response["message"]["content"]
+
+sensor_reading = "device: TEMP-042, temp: 85°C, battery: 15%, signal: -92dBm"
+analysis = unstructured_analysis(sensor_reading)
+print("--- Unstructured Output ---")
+print(analysis)
+```
+
 The response might be helpful for a human, but for a program, it's a nightmare. How would your code reliably extract the severity, the specific issues, and the recommended actions? You would have to write complex and brittle parsing logic using regular expressions. If the AI changes its wording slightly, your code breaks.
 
 ## The Solution: Prompting for Structure
 
 The solution is to make the desired structure part of the prompt itself. We can explicitly instruct the AI to respond in a machine-readable format like JSON.
 
+#### Using OpenAI
+
 ```python
 import json
+import openai
+
+client = openai.OpenAI()
 
 def structured_analysis(sensor_data: str) -> dict:
     """A prompt engineered to produce a specific JSON structure."""
@@ -79,6 +108,7 @@ Respond with a JSON object that follows this exact structure:
     except json.JSONDecodeError:
         return {"error": "Failed to parse AI response as JSON."}
 
+sensor_reading = "device: TEMP-042, temp: 85°C, battery: 15%, signal: -92dBm"
 structured_result = structured_analysis(sensor_reading)
 print("\n--- Structured Output ---")
 print(json.dumps(structured_result, indent=2))
@@ -87,6 +117,79 @@ print(json.dumps(structured_result, indent=2))
 if structured_result.get("health_status") == "Critical":
     print("\nAction required:", structured_result.get("recommended_action"))
 ```
+
+#### Using Ollama
+
+```python
+import json
+import ollama
+import re
+
+def structured_analysis(sensor_data: str, model: str = "llama2") -> dict:
+    """A prompt engineered to produce a specific JSON structure."""
+    
+    prompt = f"""
+Analyze the following IoT sensor data.
+Data: "{sensor_data}"
+
+Respond with ONLY a JSON object (no additional text) that follows this exact structure:
+{{
+  "device_id": string,
+  "health_status": "one of [Healthy, Warning, Critical]",
+  "issues": [
+    {{
+      "component": "one of [Temperature, Battery, Connectivity]",
+      "description": "A brief explanation of the issue."
+    }}
+  ],
+  "recommended_action": "The single most important next step."
+}}
+
+Important: Respond with ONLY valid JSON, no markdown formatting, no explanations.
+"""
+    
+    response = ollama.chat(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        options={"temperature": 0.1}  # Lower temperature for more consistent output
+    )
+    
+    content = response["message"]["content"].strip()
+    
+    # Try to extract JSON if wrapped in markdown or text
+    try:
+        # First try direct parsing
+        return json.loads(content)
+    except json.JSONDecodeError:
+        # Try to extract JSON from markdown code blocks
+        json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', content, re.DOTALL)
+        if json_match:
+            try:
+                return json.loads(json_match.group(1))
+            except json.JSONDecodeError:
+                pass
+        
+        # Try to find JSON object in the text
+        json_match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', content, re.DOTALL)
+        if json_match:
+            try:
+                return json.loads(json_match.group(0))
+            except json.JSONDecodeError:
+                pass
+        
+        return {"error": "Failed to parse AI response as JSON.", "raw_response": content}
+
+sensor_reading = "device: TEMP-042, temp: 85°C, battery: 15%, signal: -92dBm"
+structured_result = structured_analysis(sensor_reading)
+print("\n--- Structured Output ---")
+print(json.dumps(structured_result, indent=2))
+
+# Now, your application can reliably access the data.
+if structured_result.get("health_status") == "Critical":
+    print("\nAction required:", structured_result.get("recommended_action"))
+```
+
+**Note**: For better JSON compliance with Ollama, use models like `llama3.2` or `mistral`. You may need more robust JSON extraction logic than with OpenAI's JSON mode.
 This is a huge improvement, but it's not foolproof. The model might still occasionally produce malformed JSON.
 
 ## Pattern 1: Guaranteed JSON with JSON Mode
@@ -95,7 +198,14 @@ To solve the problem of malformed JSON, modern models from OpenAI, Anthropic, an
 
 In the OpenAI API, you enable this by setting `response_format={"type": "json_object"}`.
 
+#### Using OpenAI
+
 ```python
+import json
+import openai
+
+client = openai.OpenAI()
+
 def guaranteed_json_analysis(device_data: str) -> dict:
     """Uses JSON Mode to guarantee a valid JSON response."""
     
@@ -114,11 +224,70 @@ def guaranteed_json_analysis(device_data: str) -> dict:
     # No need for a try...except block for JSON parsing!
     return json.loads(response.choices[0].message.content)
 
+sensor_reading = "device: TEMP-042, temp: 85°C, battery: 15%, signal: -92dBm"
 json_output = guaranteed_json_analysis(sensor_reading)
 print("--- Guaranteed JSON Output ---")
 print(json.dumps(json_output, indent=2))
 ```
-Using JSON Mode is a best practice for any application that needs to programmatically consume AI output.
+
+#### Using Ollama
+
+```python
+import json
+import ollama
+import re
+
+def guaranteed_json_analysis(device_data: str, model: str = "llama3.2") -> dict:
+    """Uses prompt engineering to maximize JSON compliance (Ollama doesn't have JSON mode)."""
+    
+    prompt = """Analyze this IoT data and respond with JSON containing keys: 'device_id', 'status', 'issues', and 'recommendation'.
+
+CRITICAL: Respond with ONLY valid JSON. No markdown, no explanations, no code blocks. Just pure JSON.
+
+Data: {device_data}""".format(device_data=device_data)
+
+    response = ollama.chat(
+        model=model,  # Use llama3.2 or mistral for better JSON compliance
+        messages=[{"role": "user", "content": prompt}],
+        options={"temperature": 0.1}  # Lower temperature for more predictable structure
+    )
+    
+    content = response["message"]["content"].strip()
+    
+    # Extract JSON from response (may be wrapped in markdown or text)
+    try:
+        # Try direct parsing first
+        return json.loads(content)
+    except json.JSONDecodeError:
+        # Remove markdown code blocks if present
+        content = re.sub(r'```(?:json)?\s*', '', content)
+        content = re.sub(r'```\s*', '', content)
+        content = content.strip()
+        
+        # Try parsing again
+        try:
+            return json.loads(content)
+        except json.JSONDecodeError:
+            # Try to extract JSON object from text
+            json_match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', content, re.DOTALL)
+            if json_match:
+                try:
+                    return json.loads(json_match.group(0))
+                except json.JSONDecodeError:
+                    pass
+            
+            # If all parsing fails, return error
+            return {"error": "Failed to parse JSON", "raw_response": content}
+
+sensor_reading = "device: TEMP-042, temp: 85°C, battery: 15%, signal: -92dBm"
+json_output = guaranteed_json_analysis(sensor_reading)
+print("--- Guaranteed JSON Output ---")
+print(json.dumps(json_output, indent=2))
+```
+
+**Note**: Ollama doesn't have a built-in JSON mode like OpenAI. Use models like `llama3.2` or `mistral` for better JSON compliance, and implement robust JSON extraction logic. You may need retry logic for production use.
+
+Using JSON Mode (or equivalent prompt engineering with Ollama) is a best practice for any application that needs to programmatically consume AI output.
 
 ## Pattern 2: Pydantic for Bulletproof Validation
 
@@ -140,9 +309,19 @@ class DeviceAnalysis(BaseModel):
     issues: List[DeviceIssue]
     health_score: int = Field(..., ge=0, le=100) # Must be an integer between 0 and 100
 ```
+
 Now, we can integrate this into our AI call. We first generate the JSON schema from our Pydantic model to include in the prompt, then we use the model to parse and validate the AI's response.
 
+#### Using OpenAI
+
 ```python
+import json
+import openai
+from pydantic import BaseModel, Field
+from typing import List, Literal
+
+client = openai.OpenAI()
+
 def pydantic_validated_analysis(sensor_data: str) -> DeviceAnalysis:
     """Generates and validates a response using a Pydantic model."""
     
@@ -174,6 +353,7 @@ Data to analyze: "{sensor_data}"
         # In a real app, you could implement a retry loop here to ask the AI to fix its own output.
         return None
 
+sensor_reading = "device: TEMP-042, temp: 85°C, battery: 15%, signal: -92dBm"
 validated_output = pydantic_validated_analysis(sensor_reading)
 if validated_output:
     print("\n--- Pydantic-Validated Output ---")
@@ -183,7 +363,86 @@ if validated_output:
     # You can now access data with type safety and autocompletion
     print(f"\nHealth Score: {validated_output.health_score}")
 ```
-This combination of JSON Mode and Pydantic validation is the gold standard for production-grade structured output. It ensures that the data your application receives is not only syntactically correct but also semantically valid according to your business logic.
+
+#### Using Ollama
+
+```python
+import json
+import ollama
+import re
+from pydantic import BaseModel, Field, ValidationError
+from typing import List, Literal
+
+def pydantic_validated_analysis(sensor_data: str, model: str = "llama3.2") -> DeviceAnalysis:
+    """Generates and validates a response using a Pydantic model."""
+    
+    # Pydantic can generate a JSON schema from your model
+    json_schema = DeviceAnalysis.model_json_schema()
+    
+    prompt = f"""
+Analyze the provided IoT data. You MUST respond with ONLY a JSON object (no markdown, no explanations)
+that strictly follows this JSON Schema:
+{json.dumps(json_schema, indent=2)}
+
+Data to analyze: "{sensor_data}"
+
+CRITICAL: Respond with ONLY valid JSON matching the schema above.
+"""
+    
+    response = ollama.chat(
+        model=model,  # Use llama3.2 or mistral for better JSON compliance
+        messages=[{"role": "user", "content": prompt}],
+        options={"temperature": 0.1}
+    )
+    
+    content = response["message"]["content"].strip()
+    
+    # Extract JSON from response
+    try:
+        json_data = json.loads(content)
+    except json.JSONDecodeError:
+        # Try to extract JSON from markdown or text
+        content = re.sub(r'```(?:json)?\s*', '', content)
+        content = re.sub(r'```\s*', '', content)
+        content = content.strip()
+        
+        try:
+            json_data = json.loads(content)
+        except json.JSONDecodeError:
+            json_match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', content, re.DOTALL)
+            if json_match:
+                try:
+                    json_data = json.loads(json_match.group(0))
+                except json.JSONDecodeError:
+                    print(f"Failed to parse JSON. Raw response: {content}")
+                    return None
+            else:
+                print(f"Failed to parse JSON. Raw response: {content}")
+                return None
+    
+    try:
+        # Pydantic will parse the JSON and validate it against your model.
+        # If validation fails, it raises a ValidationError.
+        validated_data = DeviceAnalysis.model_validate(json_data)
+        return validated_data
+    except ValidationError as e:
+        print(f"Pydantic validation failed: {e}")
+        print(f"Parsed JSON was: {json.dumps(json_data, indent=2)}")
+        # In a real app, you could implement a retry loop here to ask the AI to fix its own output.
+        return None
+
+sensor_reading = "device: TEMP-042, temp: 85°C, battery: 15%, signal: -92dBm"
+validated_output = pydantic_validated_analysis(sensor_reading)
+if validated_output:
+    print("\n--- Pydantic-Validated Output ---")
+    # .model_dump_json() gives a nicely formatted JSON string
+    print(validated_output.model_dump_json(indent=2))
+    
+    # You can now access data with type safety and autocompletion
+    print(f"\nHealth Score: {validated_output.health_score}")
+```
+
+This combination of JSON Mode (or equivalent prompt engineering with Ollama) and Pydantic validation is the gold standard for production-grade structured output. It ensures that the data your application receives is not only syntactically correct but also semantically valid according to your business logic. Pydantic works identically with both OpenAI and Ollama responses.
 
 ## Pattern 3: Constrained Code Generation
 
@@ -193,7 +452,14 @@ Generating structured data is one thing; generating functional, correct, and sec
 
 Let's ask the AI to generate a Python class for a specific type of IoT device, but with strict requirements.
 
+#### Using OpenAI
+
 ```python
+import json
+import openai
+
+client = openai.OpenAI()
+
 def generate_device_driver(device_spec: dict) -> str:
     """Generates a Python device driver class based on a specification."""
     
@@ -234,13 +500,70 @@ driver_code = generate_device_driver(sensor_spec)
 print("--- Generated Device Driver Code ---")
 print(driver_code)
 ```
-By providing a clear list of non-negotiable requirements, you guide the AI to produce code that aligns with your project's standards, rather than a simplistic and unusable snippet.
+
+#### Using Ollama
+
+```python
+import json
+import ollama
+
+def generate_device_driver(device_spec: dict, model: str = "llama3.2") -> str:
+    """Generates a Python device driver class based on a specification."""
+    
+    prompt = f"""
+Generate a complete, production-ready Python class for an IoT device based on the following specification.
+
+**Specification:**
+{json.dumps(device_spec, indent=2)}
+
+**Mandatory Requirements:**
+1.  The class must be named `ModbusTempSensor`.
+2.  It must include full type hints for all method arguments and return values.
+3.  It must include comprehensive docstrings for the class and all public methods.
+4.  It must include `try...except` blocks for all I/O operations to handle potential errors gracefully.
+5.  It must use the `logging` module to log informational messages and errors.
+6.  The code must be PEP 8 compliant.
+"""
+    
+    response = ollama.chat(
+        model=model,  # Use llama3.2 or codellama for better code generation
+        messages=[{"role": "user", "content": prompt}],
+        options={"temperature": 0.1}
+    )
+    return response["message"]["content"]
+
+# Define the specification for our desired device driver
+sensor_spec = {
+    "device_type": "Modbus Temperature Sensor",
+    "protocol": "Modbus RTU",
+    "connection": "Serial (RS-485)",
+    "registers": {
+        "temperature": {"address": 4001, "type": "int16", "scale_factor": 0.1},
+        "humidity": {"address": 4002, "type": "uint16", "scale_factor": 0.1}
+    }
+}
+
+driver_code = generate_device_driver(sensor_spec)
+print("--- Generated Device Driver Code ---")
+print(driver_code)
+```
+
+**Note**: For code generation with Ollama, consider using specialized code models like `codellama` or `deepseek-coder` for better results. Models like `llama3.2` also work well for general code generation.
+
+By providing a clear list of non-negotiable requirements, you guide the AI to produce code that aligns with your project's standards, rather than a simplistic and unusable snippet. This approach works identically with both OpenAI and Ollama.
 
 ### Template-Based Code Generation
 
 An even more robust method is to provide a template and ask the AI to fill in the blanks. This gives you maximum control over the final structure.
 
+#### Using OpenAI
+
 ```python
+import json
+import openai
+
+client = openai.OpenAI()
+
 def generate_from_template(template: str, parameters: dict) -> str:
     """Fills in a code template using AI."""
     
@@ -308,12 +631,94 @@ print("\n--- Template-Generated API Endpoint ---")
 print(generated_code)
 ```
 
+#### Using Ollama
+
+```python
+import json
+import ollama
+
+def generate_from_template(template: str, parameters: dict, model: str = "llama3.2") -> str:
+    """Fills in a code template using AI."""
+    
+    prompt = f"""
+Fill in the following Python code template using the provided parameters.
+Only replace the placeholders in curly braces (e.g., {{CLASS_NAME}}).
+Do not change the structure of the template.
+
+**Template:**
+```python
+{template}
+```
+
+**Parameters:**
+{json.dumps(parameters, indent=2)}
+"""
+    
+    response = ollama.chat(
+        model=model,  # Use llama3.2 or codellama for better code generation
+        messages=[{"role": "user", "content": prompt}],
+        options={"temperature": 0.0}
+    )
+    
+    content = response["message"]["content"]
+    
+    # Clean up the response to get just the code
+    if "```python" in content:
+        content = content.split("```python")[1]
+    if "```" in content:
+        content = content.split("```")[0]
+        
+    return content.strip()
+
+# A generic template for an API endpoint in FastAPI
+api_endpoint_template = """
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+
+router = APIRouter(prefix="/{endpoint_prefix}", tags=["{tag_name}"])
+
+class {model_name}Response(BaseModel):
+    id: str
+    status: str
+
+@router.get("/{endpoint_path}/{{item_id}}", response_model={model_name}Response)
+async def get_{singular_name}(item_id: str):
+    \"\"\" {endpoint_description} \"\"\"
+    # --- Start AI-generated logic ---
+    # {business_logic_placeholder}
+    # --- End AI-generated logic ---
+    raise HTTPException(status_code=404, detail="Item not found")
+"""
+
+# Parameters to fill in the template
+params = {
+    "endpoint_prefix": "devices",
+    "tag_name": "Devices",
+    "model_name": "Device",
+    "endpoint_path": "status",
+    "singular_name": "device_status",
+    "endpoint_description": "Gets the current status of a specific IoT device.",
+    "business_logic_placeholder": "Find device in database and return its status."
+}
+
+generated_code = generate_from_template(api_endpoint_template, params)
+print("\n--- Template-Generated API Endpoint ---")
+print(generated_code)
+```
+
 ## Practical Project: A Validated IoT Configuration Generator
 
 Let's combine these patterns to build a powerful tool. Our goal is to create a system that takes a high-level description of an IoT deployment and generates a complete, validated JSON configuration file for the devices.
 
+#### Using OpenAI
+
 ```python
-from typing import Literal
+import json
+import openai
+from typing import Literal, List
+from pydantic import BaseModel, Field, ValidationError
+
+client = openai.OpenAI()
 
 # 1. Define the complete, desired output structure with Pydantic
 class SensorConfig(BaseModel):
@@ -398,7 +803,131 @@ final_config = generator.generate(user_req)
 print("--- Final Validated Configuration ---")
 print(final_config.model_dump_json(indent=2))
 ```
-This system demonstrates a robust, production-ready workflow for structured output generation. It clearly defines the desired output, uses JSON mode for syntactic correctness, validates the data with Pydantic for semantic correctness, and even includes a self-correction loop to handle errors gracefully.
+
+#### Using Ollama
+
+```python
+import json
+import ollama
+import re
+from typing import Literal, List
+from pydantic import BaseModel, Field, ValidationError
+
+# 1. Define the complete, desired output structure with Pydantic
+class SensorConfig(BaseModel):
+    sensor_type: Literal["temperature", "humidity", "pressure"]
+    reading_interval_seconds: int = Field(..., ge=10) # Must be at least 10 seconds
+
+class NetworkConfig(BaseModel):
+    connection_type: Literal["WiFi", "Cellular", "LoRaWAN"]
+    wifi_ssid: str | None = None
+    
+class DeviceConfiguration(BaseModel):
+    device_id_prefix: str
+    location: str
+    network: NetworkConfig
+    sensors: List[SensorConfig]
+    firmware_version: str = "1.0.0"
+
+class ConfigurationGenerator:
+    def __init__(self, model: str = "llama3.2"):
+        self.model = model
+
+    def generate(self, requirements: str) -> DeviceConfiguration:
+        # 2. Get the JSON schema from our Pydantic model
+        schema = DeviceConfiguration.model_json_schema()
+        
+        prompt = f"""
+Generate a complete IoT device configuration file based on these high-level requirements.
+You MUST respond with ONLY a JSON object (no markdown, no explanations) that strictly validates against the provided JSON Schema.
+
+**JSON Schema to follow:**
+{json.dumps(schema, indent=2)}
+
+**User Requirements:**
+"{requirements}"
+
+CRITICAL: Respond with ONLY valid JSON matching the schema above.
+"""
+        # 3. Generate JSON response (Ollama doesn't have JSON mode, so we use prompt engineering)
+        response = ollama.chat(
+            model=self.model,
+            messages=[{"role": "user", "content": prompt}],
+            options={"temperature": 0.1}
+        )
+        
+        content = response["message"]["content"].strip()
+        
+        # Extract JSON from response
+        json_data = self._extract_json(content)
+        
+        # 4. Use Pydantic to parse and validate the response
+        try:
+            validated_config = DeviceConfiguration.model_validate(json_data)
+            return validated_config
+        except ValidationError as e:
+            print(f"Initial generation failed validation: {e}")
+            # 5. Implement a retry loop to ask the AI to fix its own mistake
+            return self._fix_and_retry(prompt, json.dumps(json_data), str(e))
+
+    def _extract_json(self, content: str) -> dict:
+        """Extract JSON from response, handling markdown wrappers."""
+        try:
+            return json.loads(content)
+        except json.JSONDecodeError:
+            # Remove markdown code blocks
+            content = re.sub(r'```(?:json)?\s*', '', content)
+            content = re.sub(r'```\s*', '', content)
+            content = content.strip()
+            
+            try:
+                return json.loads(content)
+            except json.JSONDecodeError:
+                # Try to extract JSON object
+                json_match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', content, re.DOTALL)
+                if json_match:
+                    return json.loads(json_match.group(0))
+                raise ValueError(f"Could not extract JSON from: {content}")
+
+    def _fix_and_retry(self, original_prompt, failed_response, error_message):
+        print("Attempting to self-correct the generated JSON...")
+        fix_prompt = f"""
+The JSON you previously generated failed validation with the following error:
+Error: "{error_message}"
+
+Original failed JSON:
+{failed_response}
+
+Please review the original prompt, the JSON schema, and the error message.
+Then, generate a new, corrected JSON object that fixes the error and perfectly matches the schema.
+
+Original Prompt:
+{original_prompt}
+
+CRITICAL: Respond with ONLY valid JSON matching the schema.
+"""
+        response = ollama.chat(
+            model=self.model,
+            messages=[{"role": "user", "content": fix_prompt}],
+            options={"temperature": 0.1}
+        )
+        
+        json_data = self._extract_json(response["message"]["content"])
+        
+        # Try validating one last time
+        return DeviceConfiguration.model_validate(json_data)
+
+# --- Demo of the complete system ---
+generator = ConfigurationGenerator(model="llama3.2")
+user_req = "I need to deploy temperature and humidity sensors in our cold storage warehouse. They should report every 5 minutes and connect via our 'Warehouse-IoT' WiFi network."
+
+final_config = generator.generate(user_req)
+
+print("--- Final Validated Configuration ---")
+print(final_config.model_dump_json(indent=2))
+```
+
+This system demonstrates a robust, production-ready workflow for structured output generation. It clearly defines the desired output, uses JSON mode (or equivalent prompt engineering with Ollama) for syntactic correctness, validates the data with Pydantic for semantic correctness, and even includes a self-correction loop to handle errors gracefully. The same patterns work with both OpenAI and Ollama, though Ollama requires more robust JSON extraction logic.
 
 ## Conclusion
 

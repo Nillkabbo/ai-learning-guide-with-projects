@@ -90,17 +90,40 @@ Once activated, you'll see `(venv)` at the beginning of your terminal prompt. Th
 
 ## Installing the Essential AI Libraries
 
-With our environment ready, we can install the necessary packages. We'll start with just two:
+With our environment ready, we can install the necessary packages. We'll start with the core libraries:
 
 1.  `openai`: The official Python library for interacting with OpenAI's models (like GPT-4).
 2.  `python-dotenv`: A utility for managing secret keys securely.
+3.  `ollama`: (Optional) Python library for running local AI models with Ollama.
+
+### Installing OpenAI and Dotenv
 
 ```bash
 # Make sure your virtual environment is active!
 pip install openai python-dotenv
 ```
 
-That's it for now. You have the core tools needed to build your first application.
+### Installing Ollama (Optional - for Local AI Models)
+
+If you want to run AI models locally on your machine instead of using cloud APIs, you can install Ollama:
+
+1. **Install Ollama**: Visit [ollama.ai](https://ollama.ai) and download the installer for your operating system. Ollama runs as a local service.
+
+2. **Install Python Library**:
+```bash
+pip install ollama
+```
+
+3. **Pull a Model**: After installing Ollama, pull a model to use locally:
+```bash
+# Pull a popular model (this downloads the model to your machine)
+ollama pull llama2
+# Or try other models: mistral, codellama, phi, etc.
+```
+
+**Note**: Ollama models run locally and don't require API keys, but they do require sufficient RAM (typically 8GB+ for smaller models, 16GB+ for larger ones). The first run may be slower as the model loads into memory.
+
+That's it for now. You have the core tools needed to build your first application with either cloud-based (OpenAI) or local (Ollama) AI models.
 
 ## API Key Security: Your Most Important Lesson
 
@@ -187,6 +210,105 @@ python main.py
 
 If everything is configured correctly, you will see a confirmation message from the AI. You now have a secure, working development setup!
 
+### Using Ollama (Local Models)
+
+If you prefer to use local models with Ollama, you don't need an API key, but you do need Ollama installed and running:
+
+```python
+# main.py (Ollama version)
+import ollama
+
+# Test Ollama connection
+try:
+    # Check if Ollama is running and pull a model if needed
+    # First, ensure you've run: ollama pull llama2
+    response = ollama.chat(
+        model="llama2",  # Use a model you've pulled
+        messages=[{"role": "user", "content": "Confirm you are operational."}]
+    )
+    print("🎉 Local AI is responding! Your Ollama setup is complete.")
+    print(f"AI: {response['message']['content']}")
+except Exception as e:
+    print(f"An error occurred: {e}")
+    print("Make sure Ollama is installed and running: ollama serve")
+```
+
+### Unified Adapter Pattern (Using Both Providers)
+
+For maximum flexibility, you can create a simple adapter that works with both OpenAI and Ollama:
+
+```python
+# ai_client.py - Unified interface for both providers
+import os
+from dotenv import load_dotenv
+from typing import Literal
+
+load_dotenv()
+
+def create_ai_client(provider: Literal["openai", "ollama"] = "openai"):
+    """
+    Creates an AI client adapter that works with both OpenAI and Ollama.
+    
+    Args:
+        provider: Either "openai" for cloud models or "ollama" for local models
+    
+    Returns:
+        A client object with a unified interface
+    """
+    if provider == "ollama":
+        import ollama
+        return {
+            "type": "ollama",
+            "client": ollama,
+            "model": "llama2"  # Default model, can be changed per call
+        }
+    else:
+        import openai
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise ValueError("OPENAI_API_KEY not found in environment variables")
+        return {
+            "type": "openai",
+            "client": openai.OpenAI(api_key=api_key),
+            "model": "gpt-4o-mini"  # Default model
+        }
+
+def chat(client_info: dict, messages: list, model: str = None) -> str:
+    """
+    Unified chat function that works with both OpenAI and Ollama.
+    
+    Args:
+        client_info: The client dictionary returned by create_ai_client()
+        messages: List of message dictionaries with 'role' and 'content'
+        model: Optional model name (overrides default)
+    
+    Returns:
+        The AI's response text
+    """
+    model = model or client_info["model"]
+    
+    if client_info["type"] == "ollama":
+        response = client_info["client"].chat(model=model, messages=messages)
+        return response["message"]["content"]
+    else:
+        response = client_info["client"].chat.completions.create(
+            model=model,
+            messages=messages
+        )
+        return response.choices[0].message.content
+
+# Example usage:
+# OpenAI client
+# openai_client = create_ai_client("openai")
+# response = chat(openai_client, [{"role": "user", "content": "Hello!"}])
+
+# Ollama client
+# ollama_client = create_ai_client("ollama")
+# response = chat(ollama_client, [{"role": "user", "content": "Hello!"}])
+```
+
+This adapter pattern allows you to switch between cloud and local models easily, making your code more flexible and maintainable.
+
 ## Building Your First Complete Project: An Interactive Chatbot
 
 Let's use our new setup to build a complete, albeit simple, application. We will create a command-line chatbot that remembers the conversation history.
@@ -215,10 +337,12 @@ pip freeze > requirements.txt
 
 ### The `main.py` Chatbot Code
 
-Let's rewrite `main.py` to be a reusable class and interactive loop.
+Let's rewrite `main.py` to be a reusable class and interactive loop. We'll show both OpenAI and Ollama versions.
+
+#### Using OpenAI
 
 ```python
-# main.py
+# main.py (OpenAI version)
 import openai
 import os
 from dotenv import load_dotenv
@@ -285,7 +409,79 @@ if __name__ == "__main__":
         bot.start()
     except ValueError as e:
         print(f"Configuration Error: {e}")
+```
 
+#### Using Ollama
+
+```python
+# main.py (Ollama version)
+import ollama
+
+class Chatbot:
+    def __init__(self, model: str = "llama2"):
+        """
+        Initialize the chatbot with a local Ollama model.
+        
+        Args:
+            model: The Ollama model to use (must be pulled first with 'ollama pull <model>')
+        """
+        self.model = model
+        
+        # Initialize conversation history with a system message
+        self.conversation_history = [
+            {"role": "system", "content": "You are a helpful assistant."}
+        ]
+
+    def have_conversation(self, user_input: str) -> str:
+        """Sends user input to the AI and gets a response."""
+        
+        # Add the user's message to the history
+        self.conversation_history.append({"role": "user", "content": user_input})
+
+        try:
+            # Make the API call with the entire conversation history
+            response = ollama.chat(
+                model=self.model,
+                messages=self.conversation_history
+            )
+            
+            # Extract the AI's response message (Ollama uses dictionary structure)
+            ai_message = response["message"]["content"]
+            
+            # Add the AI's response to the history for future context
+            self.conversation_history.append({"role": "assistant", "content": ai_message})
+            
+            return ai_message
+        
+        except Exception as e:
+            return f"An error occurred: {e}. Make sure Ollama is running and the model is pulled."
+
+    def start(self):
+        """Starts the interactive chat loop."""
+        print("🤖 AI Chatbot is ready. Type 'exit' or 'quit' to end the conversation.")
+        while True:
+            try:
+                user_message = input("You: ")
+                if user_message.lower() in ["exit", "quit"]:
+                    print("👋 Goodbye!")
+                    break
+                
+                ai_response = self.have_conversation(user_message)
+                print(f"AI: {ai_response}")
+            
+            except KeyboardInterrupt:
+                print("\n👋 Goodbye!")
+                break
+
+if __name__ == "__main__":
+    try:
+        # Use llama2, mistral, codellama, or any model you've pulled
+        bot = Chatbot(model="llama2")
+        bot.start()
+    except Exception as e:
+        print(f"Configuration Error: {e}")
+        print("Make sure Ollama is installed and running: ollama serve")
+        print("And pull a model: ollama pull llama2")
 ```
 
 Now, run your complete chatbot:

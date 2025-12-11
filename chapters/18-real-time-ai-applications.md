@@ -19,7 +19,14 @@ By the end of this chapter, you will be able to:
 
 The traditional, synchronous approach to software development is fundamentally at odds with the demands of real-time systems. Let's examine a naive monitoring function to understand why.
 
+#### Using OpenAI
+
 ```python
+import time
+import openai
+
+client = openai.OpenAI()
+
 # A synchronous, blocking approach. This is NOT suitable for real-time.
 def traditional_monitoring(sensor_readings):
     print(f"Starting analysis of {len(sensor_readings)} readings...")
@@ -27,8 +34,30 @@ def traditional_monitoring(sensor_readings):
     
     for reading in sensor_readings:
         # Each API call blocks the entire process for 1-3 seconds.
-        response = openai.chat.completions.create(
+        response = client.chat.completions.create(
             model="gpt-4o-mini",
+            messages=[{"role": "user", "content": f"Analyze this reading: {reading}"}]
+        )
+        print(f"Analyzed reading {reading['id']}.")
+
+    print(f"Finished in {time.time() - start_time:.2f} seconds.")
+```
+
+#### Using Ollama
+
+```python
+import time
+import ollama
+
+# A synchronous, blocking approach. This is NOT suitable for real-time.
+def traditional_monitoring(sensor_readings, model: str = "llama2"):
+    print(f"Starting analysis of {len(sensor_readings)} readings...")
+    start_time = time.time()
+    
+    for reading in sensor_readings:
+        # Each API call blocks the entire process for 1-3 seconds.
+        response = ollama.chat(
+            model=model,
             messages=[{"role": "user", "content": f"Analyze this reading: {reading}"}]
         )
         print(f"Analyzed reading {reading['id']}.")
@@ -286,7 +315,7 @@ graph TD
         G --> H[Celery Workers];
         H -- Accesses --> I[AI Cache Redis];
         I <--> H;
-        H -- Calls --> J[OpenAI API];
+        H -- Calls --> J[AI API<br/>(OpenAI or Ollama)];
     end
 ```
 
@@ -297,9 +326,11 @@ The workflow is as follows:
 3.  If a potential anomaly is found, it's placed in a priority queue for AI analysis.
 4.  A Celery worker picks up the task from the queue.
 5.  The worker first checks the `AICache` to see if this exact pattern has been analyzed recently.
-6.  If not, it calls the OpenAI API to get a detailed analysis and diagnosis.
+6.  If not, it calls the AI API (OpenAI or Ollama) to get a detailed analysis and diagnosis.
 7.  The result is stored in the cache.
 8.  The final insight is broadcast via the `ConnectionManager` to all subscribed dashboards, appearing on screen in near real-time.
+
+**Note**: This architecture works identically with both OpenAI and Ollama. Ollama can provide lower latency for local deployments since there's no network round-trip to a cloud API, making it ideal for real-time applications where speed is critical.
 
 This architecture is robust, scalable, and responsive. It uses cheap, fast computation for initial filtering and reserves expensive, slow AI analysis for the most important events, all while providing a real-time experience to the end-user.
 

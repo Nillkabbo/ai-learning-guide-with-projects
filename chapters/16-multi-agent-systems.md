@@ -316,6 +316,119 @@ Respond with a JSON object containing a list of subtasks, like this:
         return synthesis
 ```
 
+**Note**: For production use, you would replace the simulated logic with actual LLM calls. Here are implementations:
+
+#### Using OpenAI for Coordinator Methods
+
+```python
+import json
+import openai
+
+class Coordinator:
+    """A manager agent that plans and delegates tasks to a team."""
+    def __init__(self, team: list[SpecializedAgent]):
+        self.team = {agent.specialty: agent for agent in team}
+        self.client = openai.OpenAI()
+
+    def _create_plan(self, task: str) -> dict:
+        """Uses an LLM to break a complex task into subtasks for specialists."""
+        prompt = f"""
+You are a project coordinator. Break down this complex task into a sequence of subtasks for your team of specialists.
+
+Available specialists: {list(self.team.keys())}
+Complex Task: {task}
+
+Respond with ONLY a JSON object containing a list of subtasks, like this:
+{{"subtasks": [{{"specialist": "specialty_name", "subtask": "a specific action"}}]}}
+"""
+        response = self.client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"},
+            temperature=0.1
+        )
+        return json.loads(response.choices[0].message.content)
+
+    def _synthesize_results(self, original_task: str, results: dict) -> str:
+        """Uses an LLM to combine specialist results into a single answer."""
+        prompt = f"""
+You are a project coordinator synthesizing results from multiple specialists.
+
+Original Task: {original_task}
+
+Specialist Results:
+{json.dumps(results, indent=2)}
+
+Combine these results into a coherent, integrated plan.
+"""
+        response = self.client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.2
+        )
+        return response.choices[0].message.content
+```
+
+#### Using Ollama for Coordinator Methods
+
+```python
+import json
+import ollama
+import re
+
+class Coordinator:
+    """A manager agent that plans and delegates tasks to a team."""
+    def __init__(self, team: list[SpecializedAgent], model: str = "llama3.2"):
+        self.team = {agent.specialty: agent for agent in team}
+        self.model = model
+
+    def _create_plan(self, task: str) -> dict:
+        """Uses an LLM to break a complex task into subtasks for specialists."""
+        prompt = f"""
+You are a project coordinator. Break down this complex task into a sequence of subtasks for your team of specialists.
+
+Available specialists: {list(self.team.keys())}
+Complex Task: {task}
+
+Respond with ONLY a JSON object (no markdown, no explanations) containing a list of subtasks, like this:
+{{"subtasks": [{{"specialist": "specialty_name", "subtask": "a specific action"}}]}}
+"""
+        response = ollama.chat(
+            model=self.model,
+            messages=[{"role": "user", "content": prompt}],
+            options={"temperature": 0.1}
+        )
+        
+        content = response["message"]["content"].strip()
+        try:
+            return json.loads(content)
+        except json.JSONDecodeError:
+            # Try to extract JSON
+            json_match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', content, re.DOTALL)
+            if json_match:
+                return json.loads(json_match.group(0))
+            return {"subtasks": []}
+
+    def _synthesize_results(self, original_task: str, results: dict) -> str:
+        """Uses an LLM to combine specialist results into a single answer."""
+        prompt = f"""
+You are a project coordinator synthesizing results from multiple specialists.
+
+Original Task: {original_task}
+
+Specialist Results:
+{json.dumps(results, indent=2)}
+
+Combine these results into a coherent, integrated plan.
+"""
+        response = ollama.chat(
+            model=self.model,
+            messages=[{"role": "user", "content": prompt}],
+            options={"temperature": 0.2}
+        )
+        return response["message"]["content"]
+```
+
 This pattern is effective and easy to debug, but the Coordinator can become a bottleneck.
 
 ### 2. Hierarchical Organization (Corporate Structure)
@@ -372,6 +485,67 @@ Your vote (APPROVE/REJECT):
         if self.specialty == "finance":
             return "REJECT"
         return "APPROVE"
+```
+
+**Note**: For production use, replace the simulated logic with actual LLM calls:
+
+#### Using OpenAI for VotingAgent
+
+```python
+import openai
+
+class VotingAgent(SpecializedAgent):
+    """An agent that can evaluate and vote on proposals."""
+    def __init__(self, name: str, specialty: str, expertise: str):
+        super().__init__(name, specialty, expertise)
+        self.client = openai.OpenAI()
+    
+    def cast_vote(self, proposal: Proposal) -> str:
+        """Analyzes a proposal from its specialty's perspective and votes."""
+        prompt = f"""
+You are {self.name}, an expert in {self.specialty}.
+Evaluate this proposal and decide whether to APPROVE or REJECT it based on your expertise.
+Proposal: {proposal.description}
+
+Respond with ONLY either "APPROVE" or "REJECT" - no other text.
+"""
+        response = self.client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.1
+        )
+        vote = response.choices[0].message.content.strip().upper()
+        return "APPROVE" if "APPROVE" in vote else "REJECT"
+```
+
+#### Using Ollama for VotingAgent
+
+```python
+import ollama
+
+class VotingAgent(SpecializedAgent):
+    """An agent that can evaluate and vote on proposals."""
+    def __init__(self, name: str, specialty: str, expertise: str, model: str = "llama3.2"):
+        super().__init__(name, specialty, expertise)
+        self.model = model
+    
+    def cast_vote(self, proposal: Proposal) -> str:
+        """Analyzes a proposal from its specialty's perspective and votes."""
+        prompt = f"""
+You are {self.name}, an expert in {self.specialty}.
+Evaluate this proposal and decide whether to APPROVE or REJECT it based on your expertise.
+Proposal: {proposal.description}
+
+Respond with ONLY either "APPROVE" or "REJECT" - no other text.
+"""
+        response = ollama.chat(
+            model=self.model,
+            messages=[{"role": "user", "content": prompt}],
+            options={"temperature": 0.1}
+        )
+        vote = response["message"]["content"].strip().upper()
+        return "APPROVE" if "APPROVE" in vote else "REJECT"
+```
 
 class ConsensusSystem:
     """A system for facilitating group decisions among agents."""

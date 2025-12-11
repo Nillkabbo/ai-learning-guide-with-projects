@@ -21,6 +21,8 @@ An out-of-the-box LLM is like a genius who has read every book in the library up
 
 Let's demonstrate this limitation.
 
+#### Using OpenAI
+
 ```python
 import openai
 client = openai.OpenAI()
@@ -37,6 +39,29 @@ def ask_about_specific_device(question: str):
         ]
     )
     return response.choices[0].message.content
+
+question = "What is the standard operating pressure for the HydroCore 5000 water pump?"
+answer = ask_about_specific_device(question)
+print(answer)
+```
+
+#### Using Ollama
+
+```python
+import ollama
+
+def ask_about_specific_device(question: str, model: str = "llama2"):
+    """Asks a question about a specific, fictional device."""
+    
+    # This prompt is destined to fail because the model has never heard of the HydroCore 5000.
+    response = ollama.chat(
+        model=model,
+        messages=[
+            {"role": "system", "content": "You are a helpful support agent."},
+            {"role": "user", "content": question}
+        ]
+    )
+    return response['message']['content']
 
 question = "What is the standard operating pressure for the HydroCore 5000 water pump?"
 answer = ask_about_specific_device(question)
@@ -186,6 +211,54 @@ def create_vector_store(chunks: list, client: openai.OpenAI) -> chromadb.Collect
 vector_store = create_vector_store(document_chunks, client)
 ```
 
+#### Using Ollama
+
+```python
+import chromadb
+import ollama
+
+def create_vector_store(chunks: list, embedding_model: str = "nomic-embed-text") -> chromadb.Collection:
+    """Creates embeddings for document chunks and stores them in ChromaDB using Ollama."""
+    print("Creating vector store with Ollama...")
+    
+    # Initialize ChromaDB client and create a collection
+    chroma_client = chromadb.Client()
+    collection_name = "iot_manuals"
+    # If the collection already exists, delete it for a clean start
+    if len(chroma_client.list_collections()) > 0 and collection_name in [c.name for c in chroma_client.list_collections()]:
+        chroma_client.delete_collection(name=collection_name)
+    
+    collection = chroma_client.create_collection(name=collection_name)
+    
+    # Get the text content from each chunk
+    documents_to_embed = [chunk.page_content for chunk in chunks]
+    
+    # Create embeddings using Ollama (note: Ollama processes one at a time)
+    embeddings = []
+    for doc in documents_to_embed:
+        response = ollama.embeddings(
+            model=embedding_model,
+            prompt=doc
+        )
+        embeddings.append(response["embedding"])
+    
+    # Store the documents, embeddings, and some metadata in the collection
+    collection.add(
+        embeddings=embeddings,
+        documents=documents_to_embed,
+        ids=[f"chunk_{i}" for i in range(len(chunks))] # Each item needs a unique ID
+    )
+    
+    print(f"Vector store created with {collection.count()} entries.")
+    return collection
+
+# Let's create our vector store
+# Note: Make sure you have the embedding model installed: ollama pull nomic-embed-text
+vector_store = create_vector_store(document_chunks)
+```
+
+**Note**: Ollama requires an embedding model to be installed separately. Popular options include `nomic-embed-text` (768 dimensions) or `all-minilm` (384 dimensions). Install with: `ollama pull nomic-embed-text`. Ollama processes embeddings one at a time, so for large datasets, consider using async/parallel processing.
+
 Our indexing pipeline is complete! We now have our product manual stored in a way that allows for efficient semantic search.
 
 ### Step 2: The Retrieval and Generation Pipeline
@@ -196,7 +269,13 @@ This is the "real-time" phase that happens whenever a user asks a question.
 
 First, we take the user's question, create an embedding for it, and use that embedding to query our vector store for the most similar (i.e., most relevant) chunks from the manual.
 
+#### Using OpenAI
+
 ```python
+import openai
+
+client = openai.OpenAI()
+
 def retrieve_relevant_chunks(query: str, collection: chromadb.Collection, client: openai.OpenAI, n_results: int = 2) -> list[str]:
     """Retrieves the most relevant document chunks for a given query."""
     print(f"Retrieving relevant chunks for query: '{query}'")
@@ -218,9 +297,37 @@ def retrieve_relevant_chunks(query: str, collection: chromadb.Collection, client
     return relevant_chunks
 ```
 
+#### Using Ollama
+
+```python
+import ollama
+
+def retrieve_relevant_chunks(query: str, collection: chromadb.Collection, embedding_model: str = "nomic-embed-text", n_results: int = 2) -> list[str]:
+    """Retrieves the most relevant document chunks for a given query using Ollama."""
+    print(f"Retrieving relevant chunks for query: '{query}'")
+    
+    # Create an embedding for the user's query
+    query_embedding = ollama.embeddings(
+        model=embedding_model,
+        prompt=query
+    )["embedding"]
+    
+    # Query the collection for the most similar chunks
+    results = collection.query(
+        query_embeddings=[query_embedding],
+        n_results=n_results
+    )
+    
+    relevant_chunks = results['documents'][0]
+    print(f"Found {len(relevant_chunks)} relevant chunks.")
+    return relevant_chunks
+```
+
 **2b. Augmenting the Prompt and Generating the Final Answer**
 
 This is the final and most crucial step. We construct a new prompt that combines the retrieved context with the user's original question. This gives the AI the "open book" it needs to answer correctly.
+
+#### Using OpenAI
 
 ```python
 def generate_rag_response(query: str, context_chunks: list[str], client: openai.OpenAI) -> str:
@@ -255,21 +362,66 @@ Cite the section of the manual you are using, if possible.
     )
     
     return response.choices[0].message.content
+```
+
+#### Using Ollama
+
+```python
+import ollama
+
+def generate_rag_response(query: str, context_chunks: list[str], model: str = "llama2") -> str:
+    """Generates a final answer using the retrieved context."""
+    print("Generating RAG response...")
+    
+    # Combine the context chunks into a single string
+    context_str = "\n\n---\n\n".join(context_chunks)
+    
+    system_prompt = """
+You are a helpful support assistant for the HydroCore 5000.
+Answer the user's question based *only* on the provided context.
+If the information is not in the context, say that you don't have enough information.
+Cite the section of the manual you are using, if possible.
+"""
+    
+    user_prompt = f"""
+**Context from Manual:**
+{context_str}
+
+---
+**User's Question:**
+{query}
+"""
+    
+    response = ollama.chat(
+        model=model,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+    )
+    
+    return response['message']['content']
+```
 
 # Let's test the full RAG pipeline
 user_question = "What is the standard operating pressure for the HydroCore 5000?"
 
-# 1. Retrieve context
-context = retrieve_relevant_chunks(user_question, vector_store, client)
+# 1. Retrieve context (using Ollama)
+context = retrieve_relevant_chunks(user_question, vector_store, embedding_model="nomic-embed-text")
 print("\n--- Retrieved Context ---")
 for i, chunk in enumerate(context):
     print(f"Chunk {i+1}:\n{chunk}\n")
 
-# 2. Generate final answer
-final_answer = generate_rag_response(user_question, context, client)
+# 2. Generate final answer (using Ollama)
+final_answer = generate_rag_response(user_question, context, model="llama2")
 print("--- Final RAG Answer ---")
 print(final_answer)
 ```
+
+**Note**: The RAG workflow is identical for both OpenAI and Ollama. The main differences are:
+- Embedding model: Use `nomic-embed-text` or similar for Ollama (install with `ollama pull nomic-embed-text`)
+- Chat model: Use any Ollama model (e.g., `llama2`, `mistral`, etc.)
+- Ollama processes embeddings one at a time, so consider async/parallel processing for large datasets
 The AI now confidently and correctly answers the question, likely even citing the section from the manual, because we provided the necessary knowledge directly in the prompt.
 
 ## A Complete RAG Assistant Class

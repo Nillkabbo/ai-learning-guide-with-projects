@@ -22,6 +22,8 @@ Modern LLMs are remarkably proficient at a range of tasks centered around the st
 
 This is AI's home turf. It can summarize dense articles, translate languages, rephrase text in different styles, and extract structured information from unstructured prose.
 
+#### Using OpenAI
+
 ```python
 import openai
 import os
@@ -51,11 +53,44 @@ def demonstrate_text_abilities():
 
 demonstrate_text_abilities()
 ```
+
+#### Using Ollama
+
+```python
+import ollama
+import os
+
+# Set the model to use (default: llama2)
+OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'llama2')
+
+def demonstrate_text_abilities():
+    """Demonstrates AI's core text processing capabilities."""
+    
+    tasks = {
+        "Summarization": "Summarize this paragraph in one sentence: The new IoT deployment includes 500 temperature sensors and 200 humidity sensors, all reporting back to a central server every 5 minutes. The goal is to monitor the server farm's environment to prevent overheating and maintain optimal hardware longevity.",
+        "Translation": "Translate this to Spanish: The pressure sensor is reporting a critical failure.",
+        "Information Extraction": "Extract the device ID, error type, and timestamp from this log entry: 2024-01-20T14:30:15Z - DEVICE_ID=TEMP-042 - ERROR=READ_TIMEOUT",
+        "Code Fixing": "Fix the syntax error in this Python code: def my_func(x) print(x + 1)"
+    }
+
+    for task_name, prompt in tasks.items():
+        response = ollama.chat(
+            model=OLLAMA_MODEL,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        print(f"--- {task_name} ---")
+        print(f"AI Response: {response['message']['content']}\n")
+
+demonstrate_text_abilities()
+```
+
 The AI handles these with ease because they are fundamentally pattern-based language tasks.
 
 ### 2. Recognizing Patterns in Data
 
 LLMs can identify trends, anomalies, and categories in data sets, making them excellent for tasks like log analysis or sentiment classification.
+
+#### Using OpenAI
 
 ```python
 def demonstrate_pattern_recognition():
@@ -77,11 +112,39 @@ def demonstrate_pattern_recognition():
 
 demonstrate_pattern_recognition()
 ```
+
+#### Using Ollama
+
+```python
+import ollama
+
+def demonstrate_pattern_recognition(model: str = "llama2"):
+    """Shows AI's ability to spot anomalies in a series of log entries."""
+    log_data = """
+    10:00 - sensor_01 - temp: 72.1
+    10:05 - sensor_01 - temp: 72.3
+    10:10 - sensor_01 - temp: 95.8  <-- Anomaly
+    10:15 - sensor_01 - temp: 72.5
+    10:20 - sensor_01 - temp: 72.4
+    """
+    
+    response = ollama.chat(
+        model=model,
+        messages=[{"role": "user", "content": f"Analyze these logs and identify any anomalies:\n{log_data}"}]
+    )
+    print("--- Pattern Recognition ---")
+    print(f"AI Analysis: {response['message']['content']}")
+
+demonstrate_pattern_recognition()
+```
+
 The AI correctly identifies the temperature spike because it deviates significantly from the established pattern.
 
 ### 3. Generating Code
 
 One of the most powerful applications for developers is code generation. You can describe a function in plain English, and the AI will write the code for you.
+
+#### Using OpenAI
 
 ```python
 def demonstrate_code_generation():
@@ -98,6 +161,27 @@ def demonstrate_code_generation():
 
 demonstrate_code_generation()
 ```
+
+#### Using Ollama
+
+```python
+import ollama
+
+def demonstrate_code_generation(model: str = "llama2"):
+    """Demonstrates AI writing a Python function from a description."""
+    prompt = "Write a Python function called `is_safe_temperature` that takes a temperature in Celsius and returns True if it's between 0 and 100, and False otherwise."
+    
+    response = ollama.chat(
+        model=model,
+        messages=[{"role": "system", "content": "You are a helpful coding assistant that writes clean Python code."},
+                 {"role": "user", "content": prompt}]
+    )
+    print("--- Code Generation ---")
+    print(response['message']['content'])
+
+demonstrate_code_generation()
+```
+
 > **Warning:** AI-generated code should always be treated as a draft. It requires careful review, testing, and security analysis by a human developer before being used in production.
 
 ## Where AI Stumbles: Inherent Limitations
@@ -107,6 +191,8 @@ Understanding an AI's weaknesses is more important than knowing its strengths. B
 ### 1. Mathematical and Precise Logical Reasoning
 
 LLMs are not calculators or formal logic engines. They are text predictors. When asked to do math, they are essentially guessing what sequence of numbers *looks like* the correct answer based on the training data. This often leads to errors, especially with multi-digit numbers.
+
+#### Using OpenAI
 
 ```python
 def demonstrate_math_weakness():
@@ -124,9 +210,31 @@ def demonstrate_math_weakness():
     print("⚠️ Never trust an LLM for precise calculations!")
 ```
 
+#### Using Ollama
+
+```python
+import ollama
+
+def demonstrate_math_weakness(model: str = "llama2"):
+    """Shows AI's unreliability with precise calculations."""
+    math_problem = "What is 127 multiplied by 83?"
+    
+    response = ollama.chat(
+        model=model,
+        messages=[{"role": "user", "content": math_problem}]
+    )
+    print("--- Math Weakness ---")
+    print(f"Problem: {math_problem}")
+    print(f"AI's Answer: {response['message']['content']}")
+    print(f"Correct Answer: {127 * 83}")
+    print("⚠️ Never trust an LLM for precise calculations!")
+```
+
 **The Safeguard: AI for Logic, Code for Math**
 
 A robust pattern is to use the AI to understand the *intent* of the math problem and translate it into code, which you then execute reliably.
+
+#### Using OpenAI
 
 ```python
 def safe_math_solver(problem: str):
@@ -155,11 +263,46 @@ def safe_math_solver(problem: str):
 
 print(safe_math_solver("What is 127 multiplied by 83?"))
 ```
+
+#### Using Ollama
+
+```python
+import ollama
+
+def safe_math_solver(problem: str, model: str = "llama2"):
+    """Uses AI to generate Python code for a math problem, then executes it."""
+    
+    # Ask the AI to write the code, not solve the problem.
+    code_generation_prompt = f"Convert the following math problem into a single line of Python code that can be evaluated: '{problem}'"
+    
+    response = ollama.chat(
+        model=model,
+        messages=[{"role": "system", "content": "You are a programmer. Only return raw Python code."},
+                  {"role": "user", "content": code_generation_prompt}]
+    )
+    
+    code_to_execute = response['message']['content'].strip()
+    print(f"AI generated this code: `{code_to_execute}`")
+    
+    # CRITICAL SECURITY NOTE: Using eval() on AI-generated code is extremely dangerous
+    # in a real application. This is for demonstration only. A production system
+    # would require a secure sandbox or a safer parsing library.
+    try:
+        result = eval(code_to_execute)
+        return f"Safely calculated result: {result}"
+    except Exception as e:
+        return f"Error executing AI-generated code: {e}"
+
+print(safe_math_solver("What is 127 multiplied by 83?"))
+```
+
 This hybrid approach leverages the strengths of both systems: the LLM's language understanding and Python's computational reliability.
 
 ### 2. Access to Real-Time Information
 
 LLMs are trained on a static dataset. Their knowledge has a "cutoff date." They cannot access the internet, check today's weather, or tell you the current time.
+
+#### Using OpenAI
 
 ```python
 def demonstrate_timeliness_limit():
@@ -174,6 +317,25 @@ def demonstrate_timeliness_limit():
     print(f"AI's Response: {response.choices[0].message.content}")
     print("⚠️ The AI is stating its limitation, but a less advanced model might invent an answer.")
 ```
+
+#### Using Ollama
+
+```python
+import ollama
+
+def demonstrate_timeliness_limit(model: str = "llama2"):
+    """Shows AI's lack of real-time knowledge."""
+    prompt = "What is the current temperature in New York City?"
+    
+    response = ollama.chat(
+        model=model,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    print("--- Timeliness Limitation ---")
+    print(f"AI's Response: {response['message']['content']}")
+    print("⚠️ The AI is stating its limitation, but a less advanced model might invent an answer.")
+```
+
 The only way to give an AI real-time information is to fetch it yourself from an external API and provide it as context in the prompt.
 
 ## The Specter of AI Hallucinations
@@ -181,6 +343,8 @@ The only way to give an AI real-time information is to fetch it yourself from an
 The most dangerous failure mode of an LLM is the **hallucination**. This is when the model generates information that is plausible, confident, and completely false.
 
 Hallucinations happen because the AI's goal is to predict the next most statistically likely token, not to state the truth. If a false statement is constructed from plausible word patterns, the AI may generate it.
+
+#### Using OpenAI
 
 ```python
 def demonstrate_hallucination():
@@ -198,6 +362,28 @@ def demonstrate_hallucination():
     print(f"AI's Hallucinated Response: {response.choices[0].message.content}")
     print("🚨 All these details are fabricated! This is a classic hallucination.")
 ```
+
+#### Using Ollama
+
+```python
+import ollama
+
+def demonstrate_hallucination(model: str = "llama2"):
+    """Prompts the AI about a non-existent entity to elicit a hallucination."""
+    
+    # The "Raspberry Pi Model Z" does not exist.
+    prompt = "What are the key features of the Raspberry Pi Model Z, released in 2023?"
+    
+    response = ollama.chat(
+        model=model,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    print("--- Hallucination Example ---")
+    print(f"Prompt (about a fictional product): {prompt}")
+    print(f"AI's Hallucinated Response: {response['message']['content']}")
+    print("🚨 All these details are fabricated! This is a classic hallucination.")
+```
+
 Notice how the AI doesn't say "I don't know." It confidently invents specifications, creating a convincing lie. This is why you must **never blindly trust specific, factual claims from an LLM without verification.**
 
 ## Building Safeguards into Your Applications
@@ -207,6 +393,8 @@ As responsible developers, we must build systems that anticipate and mitigate th
 ### 1. Requesting Confidence Levels
 
 A simple but effective technique is to instruct the AI to state its own confidence level. While the AI's self-assessment isn't foolproof, a low-confidence score is a strong signal for the user (or your application) to be cautious.
+
+#### Using OpenAI
 
 ```python
 def get_response_with_confidence(prompt: str):
@@ -224,9 +412,31 @@ def get_response_with_confidence(prompt: str):
 print(get_response_with_confidence("What is the average power consumption of a LoRaWAN gateway?"))
 ```
 
+#### Using Ollama
+
+```python
+import ollama
+
+def get_response_with_confidence(prompt: str, model: str = "llama2"):
+    """Instructs the AI to include a confidence score in its response."""
+    
+    system_message = "After your main response, add a new line with 'Confidence: [1-10]' where 1 is very uncertain and 10 is very certain. Briefly explain your confidence score."
+    
+    response = ollama.chat(
+        model=model,
+        messages=[{"role": "system", "content": system_message},
+                  {"role": "user", "content": prompt}]
+    )
+    return response['message']['content']
+
+print(get_response_with_confidence("What is the average power consumption of a LoRaWAN gateway?"))
+```
+
 ### 2. Implementing a "Verification Layer"
 
 For critical information, you can use a two-step AI process. First, get an answer. Second, ask another AI call to act as a "fact-checker" on the first response.
+
+#### Using OpenAI
 
 ```python
 import json
@@ -261,14 +471,55 @@ def self_verifying_ai_call(prompt: str):
 result = self_verifying_ai_call("What are the main differences between Zigbee and Z-Wave for home automation?")
 print(json.dumps(result, indent=2))
 ```
+
+#### Using Ollama
+
+```python
+import json
+import ollama
+
+def self_verifying_ai_call(prompt: str, model: str = "llama2"):
+    """A two-step process where one AI call checks the output of another."""
+    
+    # Step 1: Get the initial answer
+    initial_response = ollama.chat(
+        model=model,
+        messages=[{"role": "user", "content": prompt}]
+    )['message']['content']
+    
+    # Step 2: Ask another AI to identify claims that need verification
+    verification_prompt = f"""
+    Please review the following text and list any specific factual claims (like numbers, dates, names, or technical specs) that should be verified from an external source.
+
+    Text to review: "{initial_response}"
+    """
+    
+    verification_response = ollama.chat(
+        model=model,
+        messages=[{"role": "system", "content": "You are a helpful fact-checking assistant."},
+                  {"role": "user", "content": verification_prompt}]
+    )['message']['content']
+
+    return {
+        "original_answer": initial_response,
+        "claims_to_verify": verification_response
+    }
+
+result = self_verifying_ai_call("What are the main differences between Zigbee and Z-Wave for home automation?")
+print(json.dumps(result, indent=2))
+```
+
 This process forces a level of "introspection" and helps flag potentially hallucinatory content for human review.
 
 ### 3. Building a Safe Assistant Class
 
 Let's encapsulate these principles into a `SmartSafeAssistant` class that automatically applies different safety protocols based on the type of question.
 
+#### Using OpenAI
+
 ```python
 import re
+import openai
 
 class SmartSafeAssistant:
     def __init__(self):
@@ -308,6 +559,66 @@ class SmartSafeAssistant:
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": question}]
         ).choices[0].message.content
+        return response + "\n\n*Please note: For critical applications, always verify important information from an authoritative source.*"
+
+# --- Demo of the SmartSafeAssistant ---
+assistant = SmartSafeAssistant()
+
+questions_to_test = [
+    "What is 45 * 193?",
+    "What's the weather like right now?",
+    "Explain the concept of mesh networking in IoT."
+]
+
+for q in questions_to_test:
+    print(f"\n--- Asking: '{q}' ---")
+    print(assistant.ask(q))
+```
+
+#### Using Ollama
+
+```python
+import re
+import ollama
+
+class SmartSafeAssistant:
+    def __init__(self, model: str = "llama2"):
+        self.model = model
+
+    def classify_question(self, question: str) -> str:
+        """A simple rule-based classifier for question types."""
+        q_lower = question.lower()
+        if any(keyword in q_lower for keyword in ["calculate", "what is", "multiply", "plus"]) and any(char.isdigit() for char in q_lower):
+            return "math"
+        if any(keyword in q_lower for keyword in ["today", "now", "current"]):
+            return "current_info"
+        return "general"
+
+    def ask(self, question: str) -> str:
+        """Processes a question using the appropriate safe handler."""
+        question_type = self.classify_question(question)
+        print(f"-> Detected question type: {question_type}")
+
+        if question_type == "math":
+            return self._handle_math(question)
+        elif question_type == "current_info":
+            return self._handle_current_info()
+        else:
+            return self._handle_general(question)
+
+    def _handle_math(self, question: str) -> str:
+        # Implements the safe "code generation + eval" pattern
+        return safe_math_solver(question, model=self.model) # Assuming safe_math_solver is defined as above
+
+    def _handle_current_info(self) -> str:
+        return "I'm sorry, but I do not have access to live, real-time information. Please consult a dedicated service for current data."
+        
+    def _handle_general(self, question: str) -> str:
+        # For general questions, we add a disclaimer.
+        response = ollama.chat(
+            model=self.model,
+            messages=[{"role": "user", "content": question}]
+        )['message']['content']
         return response + "\n\n*Please note: For critical applications, always verify important information from an authoritative source.*"
 
 # --- Demo of the SmartSafeAssistant ---

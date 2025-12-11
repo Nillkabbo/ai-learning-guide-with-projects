@@ -119,6 +119,8 @@ Before you can use the OpenAI API, you need an API key. Here’s how to get one 
 
 Now for the code. This is the "Hello, World!" of AI programming.
 
+#### Using OpenAI (Cloud-based)
+
 ```python
 import openai
 
@@ -146,14 +148,53 @@ print(ai_response_text)
 Hello, AI world!
 ```
 
+#### Using Ollama (Local)
+
+If you prefer to run AI models locally on your machine, you can use Ollama. First, install Ollama from [ollama.ai](https://ollama.ai) and pull a model (e.g., `ollama pull llama2`). Then:
+
+```python
+import ollama
+
+# Ollama runs locally, so no API key is needed
+# Make sure Ollama is running: ollama serve (usually runs automatically)
+
+# Make a request to the local AI model
+response = ollama.chat(
+    model="llama2",  # Use a model you've pulled locally (e.g., llama2, mistral, codellama)
+    messages=[
+        {"role": "user", "content": "Say 'Hello, AI world!'"}
+    ]
+)
+
+# Extract and print the AI's textual response
+ai_response_text = response["message"]["content"]
+print(ai_response_text)
+```
+
+**Output:**
+
+```
+Hello, AI world!
+```
+
+**Note**: Ollama runs models locally on your machine, so you don't need an API key, but you do need sufficient RAM (typically 8GB+ for smaller models, 16GB+ for larger ones). The first run may take longer as the model loads into memory.
+
 Congratulations! You have successfully commanded an AI. Let's break down what just happened:
 
+**OpenAI Version:**
 1.  `import openai`: We imported the necessary library.
 2.  `client = openai.OpenAI()`: We created a "client," which is our connection to the AI service.
 3.  `client.chat.completions.create(...)`: This is the core function call. We are creating a "chat completion."
 4.  `model="gpt-4o-mini"`: We told the service which specific AI model to use. `gpt-4o-mini` is a great, cost-effective choice for getting started.
 5.  `messages=[...]`: This is the most important part. We provided the conversation history, which in this case was just a single message from the "user."
 6.  `response.choices[0].message.content`: The API returns a structured object. We navigated through it to pull out the plain text response from the AI.
+
+**Ollama Version:**
+1.  `import ollama`: We imported the Ollama library for local AI.
+2.  `ollama.chat(...)`: This is the core function call, similar to OpenAI but runs locally.
+3.  `model="llama2"`: We specify which local model to use (must be pulled first with `ollama pull llama2`).
+4.  `messages=[...]`: Same message structure as OpenAI.
+5.  `response["message"]["content"]`: Ollama returns a dictionary structure, slightly different from OpenAI's object model.
 
 ## The Structure of a Conversation
 
@@ -193,6 +234,8 @@ The system message is your most powerful tool for guiding the AI's behavior. A g
 
 Let's use this structure to build a slightly more useful tool. We'll create an assistant that translates cryptic IoT device status messages into plain English.
 
+#### Using OpenAI
+
 ```python
 import openai
 
@@ -223,11 +266,42 @@ explanation = response.choices[0].message.content
 print(explanation)
 ```
 
-**Example Output:**
+#### Using Ollama
+
+```python
+import ollama
+
+# A raw message from an IoT device
+device_message = "TEMP_SENSOR_01: 85.2C STATUS:WARNING"
+
+# We craft the messages list, giving the AI a clear role and the user's query.
+conversation = [
+    {
+        "role": "system",
+        "content": "You are an expert IoT monitoring assistant. Your job is to translate raw device status messages into clear, human-readable explanations."
+    },
+    {
+        "role": "user",
+        "content": f"Please explain what this device message means: '{device_message}'"
+    }
+]
+
+# Make the API call to local Ollama instance
+response = ollama.chat(
+    model="llama2",  # or mistral, codellama, etc.
+    messages=conversation
+)
+
+# Extract the response (Ollama uses dictionary structure)
+explanation = response["message"]["content"]
+print(explanation)
+```
+
+**Example Output (same for both):**
 
 > This message is from the temperature sensor identified as 'TEMP_SENSOR_01'. It is currently reporting a temperature of 85.2 degrees Celsius. The status is 'WARNING', which indicates the temperature has exceeded its normal operating threshold and requires attention. This could be a sign of overheating in the monitored equipment.
 
-Notice how the AI didn't just define the terms; it synthesized them into a coherent and helpful explanation, all thanks to the context provided by our `system` and `user` messages.
+Notice how the AI didn't just define the terms; it synthesized them into a coherent and helpful explanation, all thanks to the context provided by our `system` and `user` messages. Both OpenAI and Ollama support the same message structure, making it easy to switch between cloud and local models.
 
 ## A Glimpse Under the Hood
 

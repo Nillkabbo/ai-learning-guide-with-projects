@@ -109,6 +109,8 @@ LangChain is a mature, feature-rich framework that provides a vast ecosystem of 
 
 **Philosophy:** A "batteries-included" library for chaining LLM calls with tools, data sources, and memory.
 
+#### Using OpenAI
+
 ```python
 from langchain.agents import AgentExecutor, create_openai_tools_agent
 from langchain.memory import ConversationBufferMemory
@@ -156,7 +158,58 @@ agent_executor = AgentExecutor(
 # agent_executor.invoke({"input": "Check sensor_001 and restart it if it's online."})
 ```
 
-**Best for:** Complex, single-agent workflows that require extensive tool integrations and memory.
+#### Using Ollama
+
+```python
+from langchain.agents import AgentExecutor, create_openai_tools_agent
+from langchain.memory import ConversationBufferMemory
+from langchain_ollama import ChatOllama
+from langchain.tools import Tool
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+
+# 1. Define tools (same as OpenAI version)
+tools = [
+    Tool(
+        name="check_iot_status",
+        func=lambda device_id: f"Device {device_id} is online.",
+        description="Checks the current status of a specific IoT device."
+    ),
+    Tool(
+        name="restart_device",
+        func=lambda device_id: f"Device {device_id} restart initiated.",
+        description="Restarts a specific IoT device."
+    )
+]
+
+# 2. Create a prompt template (same as OpenAI version)
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "You are an industrial automation specialist."),
+    MessagesPlaceholder(variable_name="chat_history"),
+    ("user", "{input}"),
+    MessagesPlaceholder(variable_name="agent_scratchpad")
+])
+
+# 3. Assemble the agent with Ollama
+llm = ChatOllama(model="llama3.2", temperature=0)  # Use llama3.2 or mistral for better tool use
+memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+agent = create_openai_tools_agent(llm, tools, prompt)
+
+# 4. Create the executor (same as OpenAI version)
+agent_executor = AgentExecutor(
+    agent=agent,
+    tools=tools,
+    memory=memory,
+    verbose=True, # Essential for debugging
+    handle_parsing_errors=True # Crucial for production
+)
+
+# 5. Run the agent
+# agent_executor.invoke({"input": "Check sensor_001 and restart it if it's online."})
+```
+
+**Note**: LangChain's `ChatOllama` integration allows you to use Ollama models with LangChain agents. Install with `pip install langchain-ollama`. For better tool use, use models like `llama3.2` or `mistral`.
+
+**Best for:** Complex, single-agent workflows that require extensive tool integrations and memory. Works identically with both OpenAI and Ollama through LangChain's unified interface.
 
 ### AutoGen: Multi-Agent Conversations
 

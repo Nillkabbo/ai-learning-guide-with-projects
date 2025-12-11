@@ -115,6 +115,8 @@ This allows the AI to understand relationships between words. Even more powerful
 
 Let's get the embedding vector for a piece of text. The `text-embedding-3-small` model is a great, cost-effective choice for this.
 
+#### Using OpenAI
+
 ```python
 import openai
 
@@ -137,12 +139,46 @@ print(f"Here are the first 5 numbers: {cat_embedding[:5]}")
 
 The output is a list of 1536 numbers. We don't care about the specific values; we only care about comparing them to other vectors.
 
+#### Using Ollama
+
+```python
+import ollama
+
+def get_embedding(text: str, model: str = "nomic-embed-text") -> list[float]:
+    """Generates an embedding vector for a given piece of text using Ollama.
+    
+    Note: Ollama requires an embedding model. Popular options include:
+    - nomic-embed-text (768 dimensions)
+    - all-minilm (384 dimensions)
+    
+    Install with: ollama pull nomic-embed-text
+    """
+    response = ollama.embeddings(
+        model=model,
+        prompt=text
+    )
+    return response["embedding"]
+
+# Get the embedding for a simple word
+cat_embedding = get_embedding("cat")
+
+print(f"The word 'cat' is represented by a list of {len(cat_embedding)} numbers.")
+print(f"Here are the first 5 numbers: {cat_embedding[:5]}")
+```
+
+**Note**: Ollama embedding models have different dimensions than OpenAI's models. The `nomic-embed-text` model produces 768-dimensional vectors, while OpenAI's `text-embedding-3-small` produces 1536-dimensional vectors. Both work well for semantic similarity tasks, but you cannot directly compare embeddings from different models.
+
 ### A Practical Use Case: Semantic Search
 
 The most powerful application of embeddings is **semantic search**—finding things based on meaning, not just keywords. Let's build a tool that can find the most relevant troubleshooting step for a user's problem.
 
+#### Using OpenAI
+
 ```python
 import numpy as np
+import openai
+
+client = openai.OpenAI()
 
 def find_most_similar(query: str, options: list[str]) -> str:
     """Finds the option most semantically similar to the query."""
@@ -183,6 +219,59 @@ best_solution = find_most_similar(user_problem, possible_solutions)
 print(f"User's Problem: '{user_problem}'")
 print(f"Most Relevant Solution: '{best_solution}'")
 ```
+
+#### Using Ollama
+
+```python
+import numpy as np
+import ollama
+
+def find_most_similar(query: str, options: list[str], model: str = "nomic-embed-text") -> str:
+    """Finds the option most semantically similar to the query using Ollama."""
+    
+    # 1. Get embeddings for the query and all options
+    # Note: Ollama processes embeddings one at a time, so we'll call it multiple times
+    query_embedding = ollama.embeddings(model=model, prompt=query)["embedding"]
+    option_embeddings = [
+        ollama.embeddings(model=model, prompt=option)["embedding"]
+        for option in options
+    ]
+    
+    # 2. Normalize vectors for cosine similarity
+    def normalize(vector):
+        norm = np.linalg.norm(vector)
+        return vector / norm if norm > 0 else vector
+    
+    query_embedding = normalize(np.array(query_embedding))
+    option_embeddings = [normalize(np.array(opt_emb)) for opt_emb in option_embeddings]
+    
+    # 3. Calculate cosine similarity between the query and each option
+    similarities = [np.dot(query_embedding, opt_emb) for opt_emb in option_embeddings]
+    
+    # 4. Find the index of the highest similarity score
+    best_option_index = np.argmax(similarities)
+    
+    return options[best_option_index]
+
+# Our knowledge base of potential solutions
+possible_solutions = [
+    "Check for direct sunlight hitting the sensor.",
+    "Restart the device's WiFi router.",
+    "Recalibrate the sensor against a known temperature source.",
+    "Replace the device's battery.",
+]
+
+# A user's problem, described in their own words
+user_problem = "The thermostat reading is way too high, it says 95 degrees in here!"
+
+# Find the best solution
+best_solution = find_most_similar(user_problem, possible_solutions)
+
+print(f"User's Problem: '{user_problem}'")
+print(f"Most Relevant Solution: '{best_solution}'")
+```
+
+**Note**: Ollama processes embeddings individually, so for batch operations you'll need to call the API multiple times. For production use, consider caching embeddings or using async/parallel processing to improve performance.
 
 Notice that the user's problem doesn't contain the keywords "sunlight" or "direct." But because the *meaning* of "thermostat reading is way too high" is semantically close to the concept of an external heat source like sunlight, the embedding-based search finds the correct solution. This is far more powerful than a simple keyword search.
 

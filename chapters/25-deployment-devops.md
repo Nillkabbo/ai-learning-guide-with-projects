@@ -281,6 +281,9 @@ class FeatureFlagManager:
     def is_enabled(self, flag_name: str) -> bool:
         return self.flags.get(flag_name, {}).get("enabled", False)
 
+#### Using OpenAI
+
+```python
 class AICanaryAnalyzer:
     """Uses AI to analyze the risk of a new firmware version."""
     def __init__(self, client, feature_flags: FeatureFlagManager):
@@ -313,13 +316,70 @@ Respond with a JSON object: {{"risk_level": "one of [Low, Medium, High, Critical
             response_format={"type": "json_object"}
         )
         return json.loads(response.choices[0].message.content)
+```
+
+#### Using Ollama
+
+```python
+import ollama
+import json
+import re
+import os
+
+class AICanaryAnalyzer:
+    """Uses AI to analyze the risk of a new firmware version."""
+    def __init__(self, feature_flags: FeatureFlagManager, model: str = None):
+        self.model = model or os.getenv('OLLAMA_MODEL', 'llama2')
+        self.feature_flags = feature_flags
+
+    def analyze_risk(self, firmware_version: str, canary_logs: str) -> Dict:
+        """Analyzes logs from canary devices to assess new firmware risk."""
+        if self.feature_flags.is_enabled("use_experimental_risk_analyzer"):
+            model = "llama2:13b"  # Use a larger model for experimental analysis
+            prompt_version = "experimental_v2"
+        else:
+            model = self.model
+            prompt_version = "stable_v1"
+
+        print(f"-> Using AI risk analyzer: {prompt_version} with model {model}")
+
+        prompt = f"""
+You are a firmware quality assurance expert. Analyze the performance logs from a small 'canary' group of devices running new firmware '{firmware_version}'.
+
+**Canary Device Logs:**
+{canary_logs}
+
+Based on these logs, assess the risk of a fleet-wide deployment.
+Respond with ONLY a JSON object: {{"risk_level": "one of [Low, Medium, High, Critical]", "issues_found": ["list of issues"], "recommendation": "one of [Proceed, Monitor, Abort]"}}
+
+Output ONLY JSON, no other text.
+"""
+        response = ollama.chat(
+            model=model,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        # Extract JSON from response
+        content = response['message']['content']
+        json_match = re.search(r'\{[^{}]*\}', content, re.DOTALL)
+        if json_match:
+            return json.loads(json_match.group())
+        else:
+            return json.loads(content)
+```
+
+**Note**: For deployment scenarios, Ollama can be particularly useful for canary analysis since it runs locally and doesn't incur API costs. However, you'll need to ensure Ollama is available in your deployment environment and handle JSON extraction since Ollama doesn't have native JSON mode like OpenAI.
 
 class DeploymentOrchestrator:
     """Manages the safe deployment of firmware."""
     def __init__(self):
-        self.client = openai.OpenAI()
+        # For OpenAI version:
+        # self.client = openai.OpenAI()
+        # self.analyzer = AICanaryAnalyzer(self.client, self.feature_flags)
+        
+        # For Ollama version:
         self.feature_flags = FeatureFlagManager()
-        self.analyzer = AICanaryAnalyzer(self.client, self.feature_flags)
+        self.analyzer = AICanaryAnalyzer(self.feature_flags)
 
     def deploy_firmware(self, firmware_version: str, total_devices: int):
         print(f"\n--- Starting deployment for firmware {firmware_version} to {total_devices} devices ---")

@@ -46,6 +46,8 @@ This technique is incredibly effective at improving accuracy on tasks with a sin
 
 Let's apply this to find the root cause of a device failure.
 
+#### Using OpenAI
+
 ```python
 import openai
 import json
@@ -93,7 +95,56 @@ device_issue = "A smart thermostat is reading 10°F higher than the actual room 
 
 print(self_consistency_diagnosis(device_issue))
 ```
-While one run might suggest "faulty sensor," another might suggest "improper placement near a heat source." By running it multiple times, the most plausible answer ("improper placement" for a new installation) is likely to emerge as the consensus.
+
+#### Using Ollama
+
+```python
+import ollama
+import json
+from collections import Counter
+from typing import List, Dict, Any
+
+def self_consistency_diagnosis(problem: str, num_runs: int = 5, model: str = "llama2") -> str:
+    """Runs a diagnosis prompt multiple times to find the most consistent root cause."""
+    
+    prompt = f"""
+Analyze the following IoT issue and state the single most likely root cause.
+
+Problem: {problem}
+
+Most Likely Root Cause:
+"""
+    
+    responses = []
+    print(f"Running diagnosis {num_runs} times to find consensus...")
+
+    for i in range(num_runs):
+        response = ollama.chat(
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+            options={"temperature": 0.7}  # Higher temperature encourages diverse reasoning paths
+        )
+        
+        # We only care about the stated root cause for this simple example
+        root_cause = response["message"]["content"].strip()
+        print(f"  Run {i+1} Diagnosis: {root_cause}")
+        responses.append(root_cause)
+
+    # Find the most common response using a Counter
+    if not responses:
+        return "Failed to get any valid responses."
+        
+    most_common_cause, count = Counter(responses).most_common(1)[0]
+    
+    return f"Consensus Diagnosis (agreed upon in {count}/{num_runs} runs): {most_common_cause}"
+
+# A problem where a single prompt might give different answers
+device_issue = "A smart thermostat is reading 10°F higher than the actual room temperature. It was installed last week and has the latest firmware."
+
+print(self_consistency_diagnosis(device_issue))
+```
+
+While one run might suggest "faulty sensor," another might suggest "improper placement near a heat source." By running it multiple times, the most plausible answer ("improper placement" for a new installation) is likely to emerge as the consensus. Self-consistency works identically with both OpenAI and Ollama, though Ollama may be faster for local runs since there are no API rate limits.
 
 **When to use it:** For high-stakes questions where accuracy is critical and there is likely a single best answer. It increases API costs but significantly improves reliability.
 
@@ -108,7 +159,11 @@ The workflow is:
 
 ### Implementing a ToT Workflow
 
+#### Using OpenAI
+
 ```python
+import openai
+
 class TreeOfThoughtSolver:
     def __init__(self):
         self.client = openai.OpenAI()
@@ -164,7 +219,79 @@ print("\n--- Final ToT Solution ---")
 print(solution)
 ```
 
-**When to use it:** For complex, open-ended problems with no obvious solution. It helps avoid premature conclusions by forcing the model to consider multiple possibilities.
+#### Using Ollama
+
+```python
+import ollama
+
+class TreeOfThoughtSolver:
+    def __init__(self, model: str = "llama2"):
+        self.model = model
+
+    def solve(self, problem: str, num_paths: int = 3) -> str:
+        # 1. Generate initial thoughts (the "branches" of the tree)
+        print("--- Stage 1: Generating initial reasoning paths ---")
+        initial_thoughts = self._generate_initial_thoughts(problem, num_paths)
+        print("Initial Paths:", initial_thoughts)
+
+        # 2. Develop each thought into a more detailed plan
+        print("\n--- Stage 2: Developing each path ---")
+        developed_paths = []
+        for thought in initial_thoughts:
+            developed_paths.append(self._develop_path(problem, thought))
+
+        # 3. Evaluate the developed paths to find the best one
+        print("\n--- Stage 3: Evaluating paths and synthesizing a final answer ---")
+        return self._evaluate_and_synthesize(problem, developed_paths)
+
+    def _generate_initial_thoughts(self, problem: str, num_thoughts: int) -> list[str]:
+        prompt = f"""
+Problem: "{problem}"
+Generate {num_thoughts} distinct, high-level approaches to diagnose this problem. Each approach should be a single sentence.
+"""
+        response = ollama.chat(
+            model=self.model,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        content = response["message"]["content"]
+        return [line.strip() for line in content.split('\n') if line.strip()]
+
+    def _develop_path(self, problem: str, thought: str) -> str:
+        prompt = f"""
+Problem: "{problem}"
+Reasoning Path: "{thought}"
+Elaborate on this reasoning path. What are the specific steps you would take to investigate this? What are the pros and cons of this approach?
+"""
+        response = ollama.chat(
+            model=self.model,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return response["message"]["content"]
+
+    def _evaluate_and_synthesize(self, problem: str, developed_paths: list[str]) -> str:
+        paths_text = "\n\n".join(f"Path {i+1}:\n{path}" for i, path in enumerate(developed_paths))
+        prompt = f"""
+You have explored several reasoning paths to solve this problem: "{problem}"
+
+Here are the explored paths:
+{paths_text}
+
+Now, act as an expert reviewer. Evaluate the paths and synthesize the best elements into a single, optimal action plan.
+"""
+        response = ollama.chat(
+            model=self.model,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return response["message"]["content"]
+
+# Let's use ToT to solve our complex factory problem
+tot_solver = TreeOfThoughtSolver(model="llama2")  # or llama3.2 for better reasoning
+solution = tot_solver.solve(complex_problem)
+print("\n--- Final ToT Solution ---")
+print(solution)
+```
+
+**When to use it:** For complex, open-ended problems with no obvious solution. It helps avoid premature conclusions by forcing the model to consider multiple possibilities. Tree-of-Thought works well with both OpenAI and Ollama, though larger models like `llama3.2` may provide better reasoning quality.
 
 ## Strategy 3: ReAct (Reasoning and Acting)
 
@@ -174,7 +301,11 @@ This turns the LLM from a static knowledge base into an active agent that can in
 
 ### Implementing a ReAct Loop
 
+#### Using OpenAI
+
 ```python
+import openai
+
 class ReActAgent:
     def __init__(self, available_tools: dict):
         self.client = openai.OpenAI()
@@ -245,7 +376,85 @@ react_agent = ReActAgent(tools)
 react_agent.run(complex_problem)
 ```
 
-**When to use it:** For dynamic problems where the AI needs to gather information incrementally to solve a problem. This is the foundation of autonomous agents.
+#### Using Ollama
+
+```python
+import ollama
+
+class ReActAgent:
+    def __init__(self, available_tools: dict, model: str = "llama2"):
+        self.model = model
+        self.tools = available_tools
+
+    def run(self, problem: str, max_steps: int = 5):
+        thought_history = ""
+        for i in range(max_steps):
+            print(f"\n--- ReAct Step {i+1} ---")
+            
+            # 1. Reason about the next action
+            prompt = f"""
+You are an IoT diagnostic agent. Solve the problem by reasoning and then taking an action.
+Problem: "{problem}"
+Thought History:
+{thought_history}
+
+Your available tools are: {list(self.tools.keys())}
+
+Thought: Analyze the current situation and decide on the next best action to take.
+Action: [Choose one tool from the list]
+"""
+            response = ollama.chat(
+                model=self.model,
+                messages=[{"role": "user", "content": prompt}],
+                options={"temperature": 0}
+            )
+            
+            content = response["message"]["content"]
+            
+            # Parse the thought and action
+            thought = content.split("Action:")[0].replace("Thought:", "").strip()
+            action = content.split("Action:")[1].strip() if "Action:" in content else ""
+            print(f"Thought: {thought}")
+            print(f"Action: {action}")
+            
+            # 2. Execute the chosen action
+            if action in self.tools:
+                tool_result = self.tools[action]() # In a real app, you'd pass arguments
+                print(f"Observation: {tool_result}")
+                
+                # Update the history for the next loop
+                thought_history += f"Step {i+1}:\nThought: {thought}\nAction: {action}\nObservation: {tool_result}\n"
+                
+                # A simple check for a final answer
+                if "root cause is" in tool_result.lower():
+                    print("\n--- Diagnosis Complete ---")
+                    return tool_result
+            else:
+                print("Action not recognized. Ending loop.")
+                break
+        
+        return "Could not determine root cause within the step limit."
+
+# --- Define some dummy tools for the demo ---
+def check_network_logs():
+    return "Network logs show high latency in Zone C, starting at 09:05 AM."
+def check_motor_status():
+    return "All motors in Zone C are reporting 'offline' via the API."
+def review_maintenance_schedule():
+    return "No recent maintenance was scheduled for Zone C. However, a power grid switchover occurred at 09:02 AM."
+
+# --- Run the ReAct agent ---
+tools = {
+    "check_network_logs": check_network_logs,
+    "check_motor_status": check_motor_status,
+    "review_maintenance_schedule": review_maintenance_schedule,
+}
+
+react_agent = ReActAgent(tools, model="llama2")  # or llama3.2 for better tool use
+react_agent.run(complex_problem)
+```
+
+**When to use it:** For dynamic problems where the AI needs to gather information incrementally to solve a problem. This is the foundation of autonomous agents. ReAct works well with both OpenAI and Ollama, though you may need to adjust parsing logic for different model response formats.
 
 ## Strategy 4: Multi-Agent Debate
 
@@ -268,7 +477,11 @@ The debate typically follows this structure:
 
 ### Implementing Multi-Agent Debate
 
+#### Using OpenAI
+
 ```python
+import openai
+
 class MultiAgentDebate:
     def __init__(self):
         self.client = openai.OpenAI()
@@ -398,7 +611,141 @@ print("=== Final Synthesis ===")
 print(debate_result)
 ```
 
-**When to use it:** For complex decisions where multiple perspectives are valuable, such as strategic planning, risk assessment, or when you want to reduce bias in AI-generated recommendations.
+#### Using Ollama
+
+```python
+import ollama
+
+class MultiAgentDebate:
+    def __init__(self, model: str = "llama2"):
+        self.model = model
+        
+    def create_agents(self, problem: str) -> dict:
+        """Create agents with different perspectives and expertise."""
+        
+        agents = {
+            "optimist": {
+                "role": "Optimistic Analyst",
+                "perspective": "Focus on opportunities and positive outcomes. Consider best-case scenarios and potential benefits.",
+                "expertise": "Risk assessment and opportunity identification"
+            },
+            "pessimist": {
+                "role": "Conservative Analyst", 
+                "perspective": "Focus on risks and potential problems. Consider worst-case scenarios and potential downsides.",
+                "expertise": "Risk mitigation and contingency planning"
+            },
+            "pragmatist": {
+                "role": "Practical Engineer",
+                "perspective": "Focus on practical implementation and feasibility. Consider resource constraints and real-world limitations.",
+                "expertise": "Implementation feasibility and resource optimization"
+            }
+        }
+        
+        return agents
+    
+    def run_debate(self, problem: str, rounds: int = 3) -> str:
+        """Run a structured debate between multiple agents."""
+        
+        agents = self.create_agents(problem)
+        debate_history = []
+        
+        print("=== Multi-Agent Debate Session ===")
+        print(f"Problem: {problem}\n")
+        
+        # Initial analysis from each agent
+        initial_views = {}
+        for agent_id, agent_info in agents.items():
+            prompt = f"""
+You are a {agent_info['role']} with expertise in {agent_info['expertise']}.
+Your perspective: {agent_info['perspective']}
+
+Problem: {problem}
+
+Provide your initial analysis and recommendations based on your perspective.
+"""
+            response = ollama.chat(
+                model=self.model,
+                messages=[{"role": "user", "content": prompt}],
+                options={"temperature": 0.7}
+            )
+            
+            initial_views[agent_id] = response["message"]["content"]
+            print(f"--- {agent_info['role']} Initial View ---")
+            print(initial_views[agent_id])
+            print()
+        
+        # Debate rounds
+        for round_num in range(rounds):
+            print(f"=== Debate Round {round_num + 1} ===")
+            
+            for agent_id, agent_info in agents.items():
+                # Create context from other agents' views
+                other_views = {k: v for k, v in initial_views.items() if k != agent_id}
+                other_views_text = "\n\n".join([f"{agents[k]['role']}: {v}" for k, v in other_views.items()])
+                
+                prompt = f"""
+You are a {agent_info['role']} with expertise in {agent_info['expertise']}.
+Your perspective: {agent_info['perspective']}
+
+Problem: {problem}
+
+Other agents' views:
+{other_views_text}
+
+Your previous view:
+{initial_views[agent_id]}
+
+Based on the other agents' perspectives, provide your updated analysis. 
+Consider their points, address any concerns, and refine your recommendations.
+"""
+                
+                response = ollama.chat(
+                    model=self.model,
+                    messages=[{"role": "user", "content": prompt}],
+                    options={"temperature": 0.7}
+                )
+                
+                initial_views[agent_id] = response["message"]["content"]
+                print(f"--- {agent_info['role']} Updated View ---")
+                print(initial_views[agent_id])
+                print()
+        
+        # Final synthesis
+        all_views = "\n\n".join([f"{agents[k]['role']}: {v}" for k, v in initial_views.items()])
+        
+        synthesis_prompt = f"""
+Problem: {problem}
+
+After a structured debate, here are the final positions of three expert agents:
+
+{all_views}
+
+Synthesize these perspectives into a comprehensive, balanced solution that addresses:
+1. The opportunities and benefits identified
+2. The risks and concerns raised  
+3. The practical implementation considerations
+
+Provide a final recommendation that incorporates the best elements from all perspectives.
+"""
+        
+        final_synthesis = ollama.chat(
+            model=self.model,
+            messages=[{"role": "user", "content": synthesis_prompt}],
+            options={"temperature": 0.3}
+        )
+        
+        return final_synthesis["message"]["content"]
+
+# Example usage
+debate_system = MultiAgentDebate(model="llama2")  # or llama3.2 for better reasoning
+complex_decision = "Should we implement a new AI-powered predictive maintenance system in our factory? Consider costs, benefits, risks, and implementation challenges."
+
+debate_result = debate_system.run_debate(complex_decision)
+print("=== Final Synthesis ===")
+print(debate_result)
+```
+
+**When to use it:** For complex decisions where multiple perspectives are valuable, such as strategic planning, risk assessment, or when you want to reduce bias in AI-generated recommendations. Multi-Agent Debate works excellently with both OpenAI and Ollama, allowing you to leverage multiple perspectives locally without API costs.
 
 ## Strategy 5: Reflexion
 
@@ -423,7 +770,11 @@ Key benefits of Reflexion include:
 
 ### Implementing Reflexion
 
+#### Using OpenAI
+
 ```python
+import openai
+
 class ReflexionAgent:
     def __init__(self):
         self.client = openai.OpenAI()
@@ -555,7 +906,143 @@ print("\n=== Final Reflexion Solution ===")
 print(final_solution)
 ```
 
-**When to use it:** For complex, multi-faceted problems where initial solutions are likely to be incomplete or flawed, and where iterative improvement is valuable.
+#### Using Ollama
+
+```python
+import ollama
+
+class ReflexionAgent:
+    def __init__(self, model: str = "llama2"):
+        self.model = model
+        self.reflection_history = []
+        
+    def solve_with_reflection(self, problem: str, max_attempts: int = 3) -> str:
+        """Solve a problem with iterative reflection and improvement."""
+        
+        print(f"=== Reflexion Agent Solving: {problem} ===\n")
+        
+        for attempt in range(max_attempts):
+            print(f"--- Attempt {attempt + 1} ---")
+            
+            # Generate solution
+            solution = self._generate_solution(problem, attempt)
+            print(f"Solution: {solution}")
+            
+            # Reflect on the solution
+            reflection = self._reflect_on_solution(problem, solution, attempt)
+            print(f"Reflection: {reflection}")
+            
+            # Check if we should continue or if solution is satisfactory
+            if self._is_solution_satisfactory(reflection):
+                print(f"\n=== Solution Found on Attempt {attempt + 1} ===")
+                return solution
+            
+            # Store reflection for next attempt
+            self.reflection_history.append({
+                "attempt": attempt + 1,
+                "solution": solution,
+                "reflection": reflection
+            })
+            
+            print()
+        
+        # If we reach here, return the best solution from all attempts
+        return self._synthesize_best_solution(problem)
+    
+    def _generate_solution(self, problem: str, attempt: int) -> str:
+        """Generate a solution based on the problem and previous reflections."""
+        
+        reflection_context = ""
+        if self.reflection_history:
+            reflection_context = "\n\nPrevious attempts and reflections:\n"
+            for ref in self.reflection_history:
+                reflection_context += f"Attempt {ref['attempt']}: {ref['reflection']}\n"
+        
+        prompt = f"""
+Problem: {problem}
+
+{reflection_context}
+
+Based on the problem and any previous reflections, provide a solution.
+If this is not the first attempt, incorporate lessons learned from previous attempts.
+"""
+        
+        response = ollama.chat(
+            model=self.model,
+            messages=[{"role": "user", "content": prompt}],
+            options={"temperature": 0.7}
+        )
+        
+        return response["message"]["content"]
+    
+    def _reflect_on_solution(self, problem: str, solution: str, attempt: int) -> str:
+        """Reflect on the quality and completeness of the solution."""
+        
+        prompt = f"""
+Problem: {problem}
+Solution Attempt {attempt + 1}: {solution}
+
+Critically evaluate this solution:
+1. Does it fully address the problem?
+2. Are there any logical flaws or gaps?
+3. Could it be improved or refined?
+4. What specific improvements would you suggest?
+
+Provide a detailed reflection that will help improve the next attempt.
+"""
+        
+        response = ollama.chat(
+            model=self.model,
+            messages=[{"role": "user", "content": prompt}],
+            options={"temperature": 0.5}
+        )
+        
+        return response["message"]["content"]
+    
+    def _is_solution_satisfactory(self, reflection: str) -> bool:
+        """Determine if the solution is satisfactory based on reflection."""
+        
+        # Simple heuristic: if reflection doesn't mention major issues, consider it satisfactory
+        negative_indicators = ["major flaw", "significant gap", "doesn't address", "incomplete", "missing"]
+        return not any(indicator in reflection.lower() for indicator in negative_indicators)
+    
+    def _synthesize_best_solution(self, problem: str) -> str:
+        """Synthesize the best elements from all attempts."""
+        
+        attempts_summary = "\n\n".join([
+            f"Attempt {ref['attempt']}:\nSolution: {ref['solution']}\nReflection: {ref['reflection']}"
+            for ref in self.reflection_history
+        ])
+        
+        prompt = f"""
+Problem: {problem}
+
+After multiple attempts, here are the solutions and reflections:
+
+{attempts_summary}
+
+Synthesize the best elements from all attempts into a comprehensive final solution.
+Address the issues identified in the reflections and combine the strongest aspects of each attempt.
+"""
+        
+        response = ollama.chat(
+            model=self.model,
+            messages=[{"role": "user", "content": prompt}],
+            options={"temperature": 0.3}
+        )
+        
+        return response["message"]["content"]
+
+# Example usage
+reflexion_agent = ReflexionAgent(model="llama2")  # or llama3.2 for better reasoning
+complex_problem = "Design a comprehensive IoT security strategy for a smart city that balances functionality, privacy, and cost-effectiveness."
+
+final_solution = reflexion_agent.solve_with_reflection(complex_problem)
+print("\n=== Final Reflexion Solution ===")
+print(final_solution)
+```
+
+**When to use it:** For complex, multi-faceted problems where initial solutions are likely to be incomplete or flawed, and where iterative improvement is valuable. Reflexion works well with both OpenAI and Ollama, allowing for cost-effective iterative improvement when running locally.
 
 ## Conclusion
 

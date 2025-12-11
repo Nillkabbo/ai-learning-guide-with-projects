@@ -20,6 +20,8 @@ By the end of this chapter, you will be able to:
 
 To appreciate what makes an agent special, let's first look at what it's not. Consider a standard chatbot powered by a Large Language Model (LLM).
 
+#### Using OpenAI
+
 ```python
 import openai
 
@@ -33,6 +35,27 @@ def simple_chatbot(user_input: str) -> str:
         messages=[{"role": "user", "content": user_input}]
     )
     return response.choices[0].message.content
+
+# Each call to the function is a world of its own, with no memory of the past.
+print(simple_chatbot("What is the current temperature of sensor T-001?"))
+# Expected Response: "I'm sorry, but I don't have access to real-time data..."
+
+print(simple_chatbot("Please check it again."))
+# Expected Response: "I'm not sure what you mean by 'it'. Could you please clarify?"
+```
+
+#### Using Ollama
+
+```python
+import ollama
+
+def simple_chatbot(user_input: str, model: str = "llama2") -> str:
+    """A basic, stateless chatbot function."""
+    response = ollama.chat(
+        model=model,
+        messages=[{"role": "user", "content": user_input}]
+    )
+    return response["message"]["content"]
 
 # Each call to the function is a world of its own, with no memory of the past.
 print(simple_chatbot("What is the current temperature of sensor T-001?"))
@@ -261,7 +284,13 @@ The reasoning engine is where the "thinking" happens. It takes the agent's curre
 
 Our `ReasoningEngine` will have a single, powerful method: `reason`. It will format the available information into a prompt for the LLM and parse its structured JSON response.
 
+#### Using OpenAI
+
 ```python
+import json
+import openai
+from typing import Dict, Any
+
 class ReasoningEngine:
     """The agent's decision-making component, powered by an LLM."""
     def __init__(self, model: str = "gpt-4o-mini"):
@@ -301,6 +330,76 @@ Your response MUST be a JSON object with the following structure:
         decision = json.loads(response.choices[0].message.content)
         return decision
 ```
+
+#### Using Ollama
+
+```python
+import json
+import ollama
+import re
+from typing import Dict, Any
+
+class ReasoningEngine:
+    """The agent's decision-making component, powered by an LLM."""
+    def __init__(self, model: str = "llama3.2"):
+        self.model = model
+
+    def reason(self, goal: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Analyzes the context and decides on the next actions."""
+        prompt = f"""
+You are the reasoning core of an autonomous IoT monitoring agent.
+
+Your primary goal is: "{goal}"
+
+Here is the current context based on your recent perceptions and memories:
+{json.dumps(context, indent=2, default=str)}
+
+Based on this context and your primary goal, analyze the situation and recommend the next course of action.
+Your response MUST be ONLY a JSON object (no markdown, no explanations) with the following structure:
+{{
+  "analysis": "A brief, one-sentence analysis of the situation.",
+  "recommended_actions": [
+    {{
+      "action_name": "name_of_the_action_to_take",
+      "parameters": {{ "key": "value" }}
+    }}
+  ]
+}}
+
+CRITICAL: Respond with ONLY valid JSON matching the structure above.
+"""
+        
+        response = ollama.chat(
+            model=self.model,
+            messages=[{"role": "system", "content": prompt}],
+            options={"temperature": 0.1}
+        )
+        
+        content = response["message"]["content"].strip()
+        
+        # Extract JSON from response
+        try:
+            decision = json.loads(content)
+        except json.JSONDecodeError:
+            # Try to extract JSON from markdown or text
+            content = re.sub(r'```(?:json)?\s*', '', content)
+            content = re.sub(r'```\s*', '', content)
+            content = content.strip()
+            
+            try:
+                decision = json.loads(content)
+            except json.JSONDecodeError:
+                # Try to find JSON object in text
+                json_match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', content, re.DOTALL)
+                if json_match:
+                    decision = json.loads(json_match.group(0))
+                else:
+                    raise ValueError(f"Could not parse JSON from response: {content}")
+        
+        return decision
+```
+
+**Note**: For better JSON compliance with Ollama, use models like `llama3.2` or `mistral`. The reasoning engine works identically with both OpenAI and Ollama, though Ollama requires more robust JSON extraction logic.
 
 Let's feed our engine the high-temperature perception we've been tracking. We'll give it a clear goal and the context from our memory.
 
@@ -428,8 +527,11 @@ Now that we've built and tested each component in isolation, we can assemble the
 
 First, the `__init__` method will create instances of the four systems we designed.
 
+#### Using OpenAI
+
 ```python
 import asyncio
+from datetime import datetime
 
 class AutonomousIoTAgent:
     """A fully autonomous agent that integrates all components."""
@@ -441,13 +543,43 @@ class AutonomousIoTAgent:
         # Integrate the components we built
         self.perception = PerceptionSystem()
         self.memory = MemorySystem()
-        self.reasoner = ReasoningEngine()
+        self.reasoner = ReasoningEngine()  # Uses OpenAI by default
         self.actions = ActionSystem()
 
         # Initialize the agent's capabilities
         self._initialize_capabilities()
         
         print(f"Agent '{self.name}' initialized with goal: '{self.goal}'")
+        
+    def _initialize_capabilities(self):
+        """A helper method to register all sensors and actions."""
+        self.perception.register_sensor("temperatures", temperature_sensor)
+        self.actions.register_action("send_alert", send_alert_action)
+```
+
+#### Using Ollama
+
+```python
+import asyncio
+from datetime import datetime
+
+class AutonomousIoTAgent:
+    """A fully autonomous agent that integrates all components."""
+    def __init__(self, name: str, goal: str, model: str = "llama3.2"):
+        self.name = name
+        self.goal = goal
+        self.is_running = False
+
+        # Integrate the components we built
+        self.perception = PerceptionSystem()
+        self.memory = MemorySystem()
+        self.reasoner = ReasoningEngine(model=model)  # Uses Ollama
+        self.actions = ActionSystem()
+
+        # Initialize the agent's capabilities
+        self._initialize_capabilities()
+        
+        print(f"Agent '{self.name}' initialized with goal: '{self.goal}' (using {model})")
         
     def _initialize_capabilities(self):
         """A helper method to register all sensors and actions."""
@@ -516,10 +648,27 @@ def simulate_environment():
     print(f"\n[Environment Update] Device 002 Temp: {device_states['device_002']['temperature']:.1f}")
     return {"devices": device_states}
 
+# Using OpenAI
 async def main():
     agent = AutonomousIoTAgent(
         name="IoT-Sentinel-01", 
         goal="Ensure all devices operate within safe temperature limits (< 90 degrees)."
+    )
+    
+    # In a real application, the agent would run indefinitely.
+    # Here, we'll stop it after a few cycles for demonstration.
+    try:
+        # Run the agent for 3 cycles (30 seconds)
+        await asyncio.wait_for(agent.start(simulate_environment, interval_seconds=5), timeout=18)
+    except asyncio.TimeoutError:
+        pass
+
+# Using Ollama
+async def main_ollama():
+    agent = AutonomousIoTAgent(
+        name="IoT-Sentinel-01", 
+        goal="Ensure all devices operate within safe temperature limits (< 90 degrees).",
+        model="llama3.2"  # Specify Ollama model
     )
     
     # In a real application, the agent would run indefinitely.

@@ -21,6 +21,8 @@ By the end of this chapter, you will be able to:
 
 Let's start with a simple, practical example. Imagine you want an AI to monitor an IoT device. Without tools, the AI can only tell you *how* to do it.
 
+#### Using OpenAI
+
 ```python
 import openai
 
@@ -33,6 +35,25 @@ def ai_without_tools(user_request: str) -> str:
         messages=[{"role": "user", "content": user_request}]
     )
     return response.choices[0].message.content
+
+request = "Check the temperature of sensor T-005. If it's above 90°C, restart it."
+
+print("Response from an AI without tools:")
+print(ai_without_tools(request))
+```
+
+#### Using Ollama
+
+```python
+import ollama
+
+# An AI limited to generating text
+def ai_without_tools(user_request: str, model: str = "llama2") -> str:
+    response = ollama.chat(
+        model=model,
+        messages=[{"role": "user", "content": user_request}]
+    )
+    return response["message"]["content"]
 
 request = "Check the temperature of sensor T-005. If it's above 90°C, restart it."
 
@@ -125,6 +146,8 @@ OpenAI provides a mature and robust interface for tool use. Let's walk through t
 First, we need the actual Python functions that our agent can execute. These are the same functions from our earlier example.
 
 ```python
+from datetime import datetime
+
 def get_sensor_temperature(sensor_id: str) -> float:
     """Gets the temperature of a specific IoT sensor."""
     print(f"TOOL EXECUTED: get_sensor_temperature(sensor_id='{sensor_id}')")
@@ -146,6 +169,8 @@ available_tools = {
     "restart_device": restart_device,
 }
 ```
+
+**Note**: These tool functions are identical for both OpenAI and Ollama. The difference is in how we describe and invoke them.
 
 ### Step 2: Describe the Tools to the AI
 
@@ -282,7 +307,219 @@ print(final_response_text)
 
 This multi-step process allows the agent to build a chain of reasoning and action, tackling problems that are impossible for a simple text-generation model.
 
+## Tool Use with Ollama
+
+Ollama doesn't have native function calling like OpenAI, but we can implement tool use using prompt engineering and JSON parsing. The pattern is similar, but requires more manual parsing.
+
+### Step 1: Define Your Python Tools
+
+The tool functions are identical to the OpenAI version (see above).
+
+### Step 2: Describe the Tools to the AI
+
+We'll format the tool descriptions as a prompt-friendly text format:
+
+```python
+import json
+import ollama
+import re
+
+# Format tools as a text description for the prompt
+def format_tools_for_prompt(tool_schemas):
+    """Converts tool schemas into a prompt-friendly format."""
+    tools_text = "You have access to the following tools:\n\n"
+    for tool in tool_schemas:
+        func = tool["function"]
+        tools_text += f"Tool: {func['name']}\n"
+        tools_text += f"Description: {func['description']}\n"
+        tools_text += f"Parameters: {json.dumps(func['parameters'], indent=2)}\n\n"
+    return tools_text
+
+# The same tool schemas as OpenAI (simplified format)
+tool_schemas = [
+    {
+        "function": {
+            "name": "get_sensor_temperature",
+            "description": "Gets the temperature of a specific IoT sensor.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "sensor_id": {
+                        "type": "string",
+                        "description": "The unique identifier for the sensor, e.g., 'T-005'."
+                    }
+                },
+                "required": ["sensor_id"]
+            }
+        }
+    },
+    {
+        "function": {
+            "name": "restart_device",
+            "description": "Restarts a specific IoT device, typically to resolve an issue.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "sensor_id": {"type": "string", "description": "The ID of the device to restart."},
+                    "reason": {"type": "string", "description": "A brief explanation of why the restart is being performed."}
+                },
+                "required": ["sensor_id", "reason"]
+            }
+        }
+    }
+]
+```
+
+### Step 3: The Full Tool-Use Loop with Ollama
+
+```python
+def extract_tool_call(response_text: str) -> dict:
+    """Extracts tool call information from Ollama's response."""
+    # Look for JSON-like tool call patterns
+    # Pattern: {"tool": "function_name", "arguments": {...}}
+    json_pattern = r'\{[^{}]*"tool"[^{}]*\{[^{}]*\}'
+    match = re.search(json_pattern, response_text, re.DOTALL)
+    
+    if match:
+        try:
+            tool_call = json.loads(match.group(0))
+            return tool_call
+        except json.JSONDecodeError:
+            pass
+    
+    # Try alternative patterns
+    if "tool:" in response_text.lower() or "function:" in response_text.lower():
+        # Try to extract function name and arguments
+        lines = response_text.split('\n')
+        tool_call = {}
+        for i, line in enumerate(lines):
+            if 'tool' in line.lower() or 'function' in line.lower():
+                # Try to parse the next few lines as JSON
+                remaining = '\n'.join(lines[i:])
+                json_match = re.search(r'\{.*\}', remaining, re.DOTALL)
+                if json_match:
+                    try:
+                        tool_call = json.loads(json_match.group(0))
+                        break
+                    except json.JSONDecodeError:
+                        continue
+    
+    return tool_call if tool_call else None
+
+# A list to hold the conversation history.
+messages = [
+    {"role": "user", "content": "The temperature of sensor T-005 seems high. Please check it, and if it's over 90, restart it."}
+]
+
+# Format tools description
+tools_description = format_tools_for_prompt(tool_schemas)
+
+# Initial API call with tool descriptions in the system prompt
+print("--- 1. Agent makes initial decision ---")
+system_prompt = f"""You are an AI assistant that can use tools to help users.
+
+{tools_description}
+
+When you need to use a tool, respond with ONLY a JSON object in this exact format:
+{{"tool": "tool_name", "arguments": {{"param1": "value1", "param2": "value2"}}}}
+
+Do not include any other text, explanations, or markdown formatting. Just the JSON object."""
+
+response = ollama.chat(
+    model="llama3.2",  # Use llama3.2 or mistral for better JSON compliance
+    messages=[
+        {"role": "system", "content": system_prompt},
+        *messages
+    ],
+    options={"temperature": 0.1}
+)
+
+response_text = response["message"]["content"]
+messages.append({"role": "assistant", "content": response_text})
+
+# Extract tool call from response
+tool_call = extract_tool_call(response_text)
+
+if tool_call and "tool" in tool_call:
+    print(f"\n--- 2. Application executes the tool ---")
+    print(f"AI wants to call a tool: {tool_call['tool']}")
+    print(f"Arguments: {tool_call.get('arguments', {})}")
+    
+    function_name = tool_call["tool"]
+    if function_name in available_tools:
+        function_to_call = available_tools[function_name]
+        function_args = tool_call.get("arguments", {})
+        
+        # Execute the function and get the result
+        function_response = function_to_call(**function_args)
+        
+        # Add the tool's output to the conversation history
+        messages.append({
+            "role": "user",
+            "content": f"Tool '{function_name}' returned: {json.dumps(function_response)}. Continue with the next step."
+        })
+        
+        print("\n--- 3. Agent makes its next move with new info ---")
+        
+        # Make the second API call, sending the tool result back to the model
+        second_response = ollama.chat(
+            model="llama3.2",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                *messages
+            ],
+            options={"temperature": 0.1}
+        )
+        
+        second_response_text = second_response["message"]["content"]
+        messages.append({"role": "assistant", "content": second_response_text})
+        
+        # Check for another tool call
+        second_tool_call = extract_tool_call(second_response_text)
+        if second_tool_call and "tool" in second_tool_call:
+            # Execute the second tool (restart_device)
+            function_name = second_tool_call["tool"]
+            function_to_call = available_tools[function_name]
+            function_args = second_tool_call.get("arguments", {})
+            function_response = function_to_call(**function_args)
+            
+            # Get final response
+            messages.append({
+                "role": "user",
+                "content": f"Tool '{function_name}' returned: {json.dumps(function_response)}. Provide a summary of what was done."
+            })
+            
+            final_response = ollama.chat(
+                model="llama3.2",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    *messages
+                ],
+                options={"temperature": 0.1}
+            )
+            
+            print("\n--- 4. Final user-facing response ---")
+            print(final_response["message"]["content"])
+        else:
+            print("\n--- 4. Final user-facing response ---")
+            print(second_response_text)
+else:
+    # No tool call, direct response
+    print("\n--- Direct response (no tools needed) ---")
+    print(response_text)
+```
+
+**Note**: Ollama tool use requires more manual parsing and prompt engineering than OpenAI's native function calling. For production use, consider:
+- Using models with better JSON compliance (`llama3.2`, `mistral`)
+- Implementing more robust JSON extraction logic
+- Adding retry logic for malformed tool calls
+- Using structured output techniques from Chapter 11
+
 ### Parallel Function Calling
+
+Modern models can decide to call multiple tools at once if the tasks are independent. For example, if asked to "Check the temperature of T-001 and the status of server S-002," the AI might return two `tool_calls` in a single response.
+
+Your code should be prepared to handle this by looping through `response_message.tool_calls` and executing each one. For maximum efficiency, you can execute them in parallel using `asyncio`.
 
 Modern models can decide to call multiple tools at once if the tasks are independent. For example, if asked to "Check the temperature of T-001 and the status of server S-002," the AI might return two `tool_calls` in a single response.
 

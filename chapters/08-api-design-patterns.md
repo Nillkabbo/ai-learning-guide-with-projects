@@ -35,6 +35,8 @@ def naive_ai_call(prompt: str):
 
 A much better approach is to catch *specific* error types that the API library provides. This allows you to react differently to different kinds of failures. For example, a `RateLimitError` is temporary and can be retried, while an `AuthenticationError` is permanent and should not be.
 
+#### Using OpenAI
+
 ```python
 import openai
 from typing import Optional
@@ -59,6 +61,37 @@ def better_error_handling(prompt: str) -> Optional[str]:
         return None
 ```
 
+#### Using Ollama
+
+```python
+import ollama
+from typing import Optional
+
+def better_error_handling(prompt: str, model: str = "llama2") -> Optional[str]:
+    """Handles specific, known exceptions from the Ollama library."""
+    try:
+        response = ollama.chat(
+            model=model,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return response['message']['content']
+    except Exception as e:
+        # Ollama doesn't have specific exception types like OpenAI
+        # Check error message content to determine error type
+        error_msg = str(e).lower()
+        if "connection" in error_msg or "refused" in error_msg:
+            print(f"Connection failed. Is Ollama running? Details: {e}")
+            return None
+        elif "model" in error_msg and "not found" in error_msg:
+            print(f"Model not found. Install with: ollama pull {model}. Details: {e}")
+            return None
+        else:
+            print(f"An Ollama API error occurred: {e}")
+            return None
+```
+
+**Note**: Ollama uses generic Python exceptions rather than custom exception types. Error handling relies on checking error message content or HTTP status codes if using Ollama's HTTP API directly.
+
 ## Pattern 1: Retries with Exponential Backoff
 
 Network glitches and temporary service overloads are common. A simple retry can often resolve the issue. However, retrying immediately can make the problem worse, contributing to a "thundering herd" that overwhelms the service.
@@ -75,6 +108,8 @@ pip install tenacity
 ```
 
 Now, we can add a simple decorator to our function to make it resilient.
+
+#### Using OpenAI
 
 ```python
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
@@ -97,6 +132,39 @@ def robust_ai_call(prompt: str) -> str:
         messages=[{"role": "user", "content": prompt}]
     )
     return response.choices[0].message.content
+```
+
+#### Using Ollama
+
+```python
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+import ollama
+
+def is_transient_error(exception: Exception) -> bool:
+    """Check if an error is transient and should be retried."""
+    error_msg = str(exception).lower()
+    # Retry on connection errors, but not on model-not-found errors
+    return "connection" in error_msg or "refused" in error_msg or "timeout" in error_msg
+
+@retry(
+    # Stop retrying after 3 attempts.
+    stop=stop_after_attempt(3),
+    # Wait 1s, then 2s, then 4s, etc., with a max wait of 10s.
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    # Retry on transient errors (connection issues)
+    retry=retry_if_exception_type(Exception) if is_transient_error else None
+)
+def robust_ai_call(prompt: str, model: str = "llama2") -> str:
+    """A production-ready AI call with automatic retries."""
+    print(f"Attempting to call Ollama API (model: {model})...")
+    response = ollama.chat(
+        model=model,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return response['message']['content']
+```
+
+**Note**: For Ollama, retry logic focuses on connection errors since local models typically don't have rate limits. However, you may want to retry if Ollama's service is temporarily unavailable.
 
 # You can call this function normally; tenacity handles the retries behind the scenes.
 try:
@@ -161,8 +229,11 @@ Not all user requests are the same. A request for a quick fact needs a fast, com
 
 Here's an adaptive function that decides which strategy to use.
 
+#### Using OpenAI
+
 ```python
 from typing import Union, Iterator
+import openai
 
 def adaptive_ai_response(prompt: str) -> Union[str, Iterator[str]]:
     """Automatically chooses to stream or not based on the prompt."""
@@ -189,6 +260,47 @@ def adaptive_ai_response(prompt: str) -> Union[str, Iterator[str]]:
             messages=[{"role": "user", "content": prompt}]
         )
         return response.choices[0].message.content
+
+# Test with a short query
+result = adaptive_ai_response("What is the capital of Japan?")
+print(result)
+
+# Test with a long query
+stream_result = adaptive_ai_response("Write a short story about a brave knight.")
+for chunk in stream_result:
+    print(chunk, end="", flush=True)
+print()
+```
+
+#### Using Ollama
+
+```python
+from typing import Union, Iterator
+import ollama
+
+def adaptive_ai_response(prompt: str, model: str = "llama2") -> Union[str, Iterator[str]]:
+    """Automatically chooses to stream or not based on the prompt."""
+    
+    # Heuristic: If the prompt asks for long-form content, enable streaming.
+    streaming_keywords = ['write', 'explain', 'describe', 'story', 'report', 'detailed']
+    should_stream = any(keyword in prompt.lower() for keyword in streaming_keywords)
+    
+    if should_stream:
+        print("-> Using streaming response.")
+        stream = ollama.chat(
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+            stream=True
+        )
+        # Return the generator object for the client to iterate over
+        return (chunk.get("message", {}).get("content", "") for chunk in stream)
+    else:
+        print("-> Using batch response.")
+        response = ollama.chat(
+            model=model,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return response['message']['content']
 
 # Test with a short query
 result = adaptive_ai_response("What is the capital of Japan?")
@@ -269,9 +381,13 @@ Relying on a single AI provider is risky. Services can experience outages or per
 
 First, we create a common interface for different providers.
 
+#### Using OpenAI, Anthropic, and Google
+
 ```python
 from enum import Enum
-import anthropic, google.generativeai as genai
+import openai
+import anthropic
+import google.generativeai as genai
 
 class AIProviderEnum(Enum):
     OPENAI = "openai"
@@ -342,6 +458,8 @@ print(f"Final Result: {result}")
 ```
 
 This simple failover logic dramatically increases the uptime and reliability of your application. More advanced routers could incorporate health checks and performance metrics to choose the best provider dynamically.
+
+**Note**: Ollama can be added as a provider option in the multi-provider architecture. Since Ollama runs locally, it can serve as a reliable fallback when cloud providers are unavailable, or as the primary provider for cost-sensitive applications. The failover pattern works identically—simply add `AIProviderEnum.OLLAMA` to the provider list and implement the Ollama call logic in the `call` method.
 
 ## Conclusion: Building for the Real World
 
