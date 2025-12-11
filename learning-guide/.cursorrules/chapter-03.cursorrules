@@ -1,0 +1,281 @@
+# Chapter 3: Setting Up Your Development Environment - Cursor Rules
+
+## Chapter Context
+
+This chapter covers professional development environment setup: virtual environments, API key security, project structure, and building a complete chatbot. These are foundational practices for all AI development.
+
+## Key Concepts
+
+### 1. Virtual Environments
+- Isolated Python environments per project
+- Prevents dependency conflicts
+- Created with: `python3 -m venv venv`
+- Activated with: `source venv/bin/activate` (macOS/Linux) or `venv\Scripts\activate` (Windows)
+- Deactivated with: `deactivate`
+- Always activate before installing packages
+
+### 2. API Key Security (CRITICAL)
+- API keys are like passwords—never commit to code
+- Use `.env` files for storage
+- Add `.env` to `.gitignore` immediately
+- Load with `python-dotenv`: `load_dotenv()` then `os.getenv("KEY")`
+- Rotate keys if exposed
+- Use different keys for different projects
+
+### 3. Project Structure
+- Clear directory organization
+- `requirements.txt` for dependencies
+- Separate concerns (config, utils, main)
+- Professional file naming
+- Documentation (README.md)
+
+### 4. Essential Libraries
+- `openai`: OpenAI API client
+- `python-dotenv`: Environment variable management
+- `ollama`: Local AI models (optional)
+- `tiktoken`: Token counting (from Chapter 2)
+
+## Important Code Patterns
+
+### Virtual Environment Setup
+```bash
+# Create
+python3 -m venv venv
+
+# Activate (macOS/Linux)
+source venv/bin/activate
+
+# Activate (Windows)
+venv\Scripts\activate
+
+# Deactivate
+deactivate
+```
+
+### Secure API Key Management
+```python
+# .env file (never commit!)
+OPENAI_API_KEY="sk-xxxxxxxxxxxxx"
+
+# .gitignore
+.env
+venv/
+__pycache__/
+
+# Python code
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+api_key = os.getenv("OPENAI_API_KEY")
+if not api_key:
+    raise ValueError("API key not found")
+```
+
+### Project Structure Template
+```
+project/
+├── .env                 # Secrets (gitignored)
+├── .gitignore
+├── requirements.txt
+├── README.md
+├── src/
+│   ├── __init__.py
+│   ├── main.py
+│   └── config.py
+└── tests/
+    └── test_main.py
+```
+
+### Chatbot Class Pattern
+```python
+class Chatbot:
+    def __init__(self):
+        load_dotenv()
+        self.client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        self.conversation_history = [
+            {"role": "system", "content": "You are a helpful assistant."}
+        ]
+    
+    def chat(self, user_input: str) -> str:
+        self.conversation_history.append({"role": "user", "content": user_input})
+        response = self.client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=self.conversation_history
+        )
+        ai_message = response.choices[0].message.content
+        self.conversation_history.append({"role": "assistant", "content": ai_message})
+        return ai_message
+```
+
+### Unified Adapter Pattern
+```python
+def create_ai_client(provider: str = "openai"):
+    if provider == "ollama":
+        import ollama
+        return {"type": "ollama", "client": ollama, "model": "llama2"}
+    else:
+        import openai
+        return {
+            "type": "openai",
+            "client": openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY")),
+            "model": "gpt-4o-mini"
+        }
+```
+
+## Common Mistakes to Avoid
+
+1. **Security Mistakes**
+   - Hard-coding API keys in code
+   - Committing `.env` to Git
+   - Sharing keys in screenshots/code
+   - Not using `.gitignore`
+
+2. **Environment Mistakes**
+   - Forgetting to activate virtual environment
+   - Installing packages globally
+   - Using wrong Python version
+   - Not documenting dependencies
+
+3. **Structure Mistakes**
+   - Messy file organization
+   - No `requirements.txt`
+   - Mixing concerns
+   - Poor naming conventions
+
+4. **Code Mistakes**
+   - Not handling errors
+   - Hard-coding values
+   - No documentation
+   - Poor code organization
+
+## Integration Points
+
+### Prerequisites (Chapters 1-2)
+- Understanding of AI API calls
+- Message structure knowledge
+- Token counting (for context management)
+
+### Next Chapter Preparation (Chapter 4)
+- Development environment ready
+- Can build and test applications
+- Understands professional practices
+
+## Project Context
+
+### Chapter 3 Project: Enhanced Chatbot
+- **Type**: Cumulative (builds on Chapters 1-2)
+- **Focus**: Professional setup, secure practices, complete application
+- **Key Skills**: Environment management, security, project structure
+- **Extension Opportunities**: Web interface, multiple models, analytics
+
+## Code Style and Best Practices
+
+### Security
+- Never commit secrets
+- Use environment variables
+- Rotate keys if exposed
+- Use different keys per project
+- Add `.env` to `.gitignore` immediately
+
+### Project Organization
+- Use virtual environments
+- Document dependencies
+- Clear directory structure
+- Separate concerns
+- Professional naming
+
+### Code Quality
+- Handle errors gracefully
+- Use classes for organization
+- Document code
+- Follow PEP 8 style
+- Write readable code
+
+## Learning Progression
+
+### What Students Should Master
+1. ✅ Can create and use virtual environments
+2. ✅ Understands API key security
+3. ✅ Can set up proper project structure
+4. ✅ Can build complete applications
+5. ✅ Follows professional practices
+
+### Common Student Questions
+- "Do I really need a virtual environment?" → Yes, it's standard practice
+- "Can I put my API key in code?" → No, use .env files
+- "What if I forget to activate venv?" → Packages install globally (bad)
+- "Should I use OpenAI or Ollama?" → Start with OpenAI, use Ollama for privacy/cost
+
+## Technical Notes
+
+### Virtual Environment Benefits
+- Isolated dependencies
+- Reproducible environments
+- Easy cleanup (delete venv folder)
+- Multiple Python versions
+- Project-specific packages
+
+### .env File Format
+```
+# Comments allowed
+OPENAI_API_KEY="sk-xxxxx"
+ANOTHER_KEY="value"
+NO_QUOTES=also_works
+```
+
+### requirements.txt Generation
+```bash
+# Generate from current environment
+pip freeze > requirements.txt
+
+# Install from file
+pip install -r requirements.txt
+```
+
+## Related Chapters
+
+- **Chapter 1**: Basic AI calls (used in chatbot)
+- **Chapter 2**: Context management (used in enhanced chatbot)
+- **Chapter 4**: AI capabilities (builds on development setup)
+- **Chapter 17**: Web applications (extends project structure)
+
+## Memory Context for Next Session
+
+When continuing to Chapter 4, remember:
+- Students have professional development setup
+- They understand security practices
+- They can build complete applications
+- They follow best practices
+- They're ready for advanced concepts
+
+## Project-Specific Context
+
+The Enhanced Chatbot project:
+- Reinforces all Chapter 3 concepts
+- Applies Chapters 1-2 knowledge
+- Demonstrates professional practices
+- Shows complete application structure
+- Should be completable in 3-4 hours
+
+## Advanced Notes
+
+### Multi-Environment Setup
+- Development: local testing
+- Staging: pre-production
+- Production: live environment
+- Use different .env files per environment
+
+### Dependency Management
+- Pin versions in requirements.txt
+- Use virtual environments
+- Document optional dependencies
+- Keep requirements.txt updated
+
+### Security Best Practices
+- Never log API keys
+- Use key rotation
+- Monitor API usage
+- Set spending limits
+- Use least privilege principle
+

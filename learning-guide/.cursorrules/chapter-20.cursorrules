@@ -1,0 +1,110 @@
+# Chapter 20: Scaling AI Applications - Cursor Rules
+
+## Chapter Context
+
+This chapter covers scaling AI applications to handle growth. Students learn horizontal scaling, load balancing, queue-based architectures, microservices scaling, and database optimization. Essential for production systems.
+
+## Key Concepts
+
+### 1. AI Scaling Challenges
+- Variable latency (milliseconds to seconds)
+- High costs (every call costs money)
+- Resource consumption (CPU, GPU, memory)
+- State management (conversations, context)
+- API rate limits (provider constraints)
+
+### 2. Horizontal Scaling
+- Multiple servers
+- Load balancing
+- Session affinity (sticky sessions)
+- Stateless design
+- Health checks
+
+### 3. Queue-Based Architecture
+- Task queues (Redis, RabbitMQ)
+- Worker pools
+- Priority queues
+- Result storage
+- Async processing
+
+### 4. Microservices Scaling
+- Independent scaling per service
+- Service-specific resources
+- API gateways
+- Service discovery
+- Resource allocation
+
+### 5. Database Optimization
+- Read replicas (scale reads)
+- Sharding (scale writes)
+- Caching layers
+- Query optimization
+- Connection pooling
+
+## Important Code Patterns
+
+### Horizontal Scaling Setup
+```python
+# Use load balancer (nginx, AWS ALB)
+# Multiple FastAPI instances
+# Stateless design
+# Shared state in database/cache
+
+# Stateless endpoint
+@app.post("/analyze")
+async def analyze(data: dict):
+    # No in-memory state
+    # All state in database
+    result = process(data)
+    db.save(result)
+    return result
+```
+
+### Queue-Based Processing
+```python
+from celery import Celery
+
+celery_app = Celery('tasks', broker='redis://localhost:6379')
+
+@celery_app.task
+def analyze_async(data):
+    # Long-running AI task
+    return ai.analyze(data)
+
+# Scale workers: celery -A tasks worker --concurrency=4
+```
+
+### Database Read Replicas
+```python
+# Primary for writes
+primary_db = create_connection("primary")
+
+# Replicas for reads
+read_replica = create_connection("replica")
+
+def read_data(query):
+    return read_replica.execute(query)
+
+def write_data(data):
+    return primary_db.execute(data)
+```
+
+## Common Mistakes to Avoid
+
+1. **In-memory state**: Prevents horizontal scaling
+2. **Synchronous blocking**: Use queues and async
+3. **No load balancing**: Single point of failure
+4. **Database bottlenecks**: Use replicas and caching
+5. **No monitoring**: Can't scale without metrics
+
+## Integration Points
+
+- **Chapter 19**: Architecture (foundation for scaling)
+- **Chapter 21**: Cost optimization (scaling affects costs)
+- **Chapter 23**: Monitoring (essential for scaling)
+
+## Related Chapters
+
+- **Chapter 19**: Architecture (foundation)
+- **Chapter 21**: Cost optimization (scaling costs)
+- **Chapter 23**: Monitoring (scaling metrics)
